@@ -1,10 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useContext } from "react";
+import { ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
 export default function Verify2FAPage() {
   const navigate = useNavigate();
+  const { setLoggedIn } = useContext(AuthContext);
   const [digits, setDigits] = useState(Array(6).fill(""));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,6 +44,7 @@ export default function Verify2FAPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 700));
     setLoading(false);
+    setLoggedIn(true);
     navigate("/dashboard");
   };
 
@@ -65,7 +69,7 @@ export default function Verify2FAPage() {
               fontSize: 24,
             }}
           >
-            🔐
+            <ShieldCheck size={24} color="var(--accent)" />
           </div>
           <h1 className="auth-title">Verifikasi dua faktor</h1>
           <p className="auth-subtitle">
@@ -80,7 +84,7 @@ export default function Verify2FAPage() {
             {digits.map((d, i) => (
               <input
                 key={i}
-                ref={(el) => (refs.current[i] = el)}
+                ref={(el) => { refs.current[i] = el; }}
                 className="otp-input"
                 type="text"
                 inputMode="numeric"

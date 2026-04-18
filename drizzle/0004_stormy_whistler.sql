@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `two_fa_secret` varchar(64);

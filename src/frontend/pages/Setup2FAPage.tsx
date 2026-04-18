@@ -1,28 +1,39 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context";
 import QRCode from "qrcode";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
-const SECRET  = "JBSWY3DPEHPK3PXP";
-const ISSUER  = "FFGWebApps";
-const ACCOUNT = "user@ffgwebapps.com";
+const ISSUER = "FFG Web Apps";
 
 export default function Setup2FAPage() {
   const navigate = useNavigate();
+  const { setLoggedIn } = useContext(AuthContext);
   const [tab, setTab]       = useState<"qr" | "key">("qr");
   const [qrUrl, setQrUrl]   = useState("");
+  const [secret, setSecret] = useState("");
   const [copied, setCopied] = useState(false);
   const [digits, setDigits] = useState(Array(6).fill(""));
   const [error, setError]   = useState("");
   const [loading, setLoading] = useState(false);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const otpauthUri = `otpauth://totp/${encodeURIComponent(ISSUER)}:${encodeURIComponent(ACCOUNT)}?secret=${SECRET}&issuer=${encodeURIComponent(ISSUER)}&algorithm=SHA1&digits=6&period=30`;
-
   useEffect(() => {
-    QRCode.toDataURL(otpauthUri, { width: 150, margin: 1, color: { dark: "#000000", light: "#ffffff" } })
-      .then(setQrUrl)
+    const token = sessionStorage.getItem("session_token");
+    if (!token) return;
+    fetch("/api/users/2fa-secret", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json: { data?: { secret: string; nik: number } }) => {
+        if (!json.data) return;
+        const { secret: s, nik } = json.data;
+        setSecret(s);
+        const account = `${nik}`;
+        const uri = `otpauth://totp/${encodeURIComponent(ISSUER)}:${encodeURIComponent(account)}?secret=${s}&issuer=${encodeURIComponent(ISSUER)}&algorithm=SHA1&digits=6&period=30`;
+        QRCode.toDataURL(uri, { width: 150, margin: 1, color: { dark: "#000000", light: "#ffffff" } })
+          .then(setQrUrl)
+          .catch(console.error);
+      })
       .catch(console.error);
   }, []);
 
@@ -45,17 +56,26 @@ export default function Setup2FAPage() {
   };
 
   const copySecret = () => {
-    navigator.clipboard.writeText(SECRET).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+    navigator.clipboard.writeText(secret).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (digits.join("").length < 6) { setError("Masukkan 6 digit kode OTP."); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setLoading(false);
-    sessionStorage.setItem("2fa_setup", "done");
-    navigate("/dashboard");
+    try {
+      const token = sessionStorage.getItem("session_token");
+      await fetch("/api/users/2fa-setup", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLoggedIn(true);
+      navigate("/dashboard");
+    } catch {
+      setError("Gagal mengaktifkan 2FA. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,7 +110,7 @@ export default function Setup2FAPage() {
         ) : (
           <div className="qr-container">
             <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Kunci Rahasia (Secret Key):</p>
-            <div className="secret-key">{SECRET}</div>
+            <div className="secret-key">{secret}</div>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn btn-ghost btn-sm" onClick={copySecret} type="button">
                 {copied ? "✓ Tersalin" : "Salin"}
@@ -111,7 +131,7 @@ export default function Setup2FAPage() {
             {digits.map((d, i) => (
               <input
                 key={i}
-                ref={(el) => (refs.current[i] = el)}
+                ref={(el) => { refs.current[i] = el; }}
                 className="otp-input"
                 type="text"
                 inputMode="numeric"

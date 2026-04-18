@@ -1,4 +1,4 @@
-import { int, mysqlTable, varchar, timestamp } from "drizzle-orm/mysql-core";
+import { int, mysqlTable, varchar, timestamp, boolean } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
@@ -6,5 +6,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   nik: int("nik").notNull().unique(),
   password: varchar("password", { length: 255 }).notNull(),
+  twoFaSetup: boolean("two_fa_setup").notNull().default(false),
+  twoFaSecret: varchar("two_fa_secret", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

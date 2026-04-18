@@ -15,6 +15,27 @@
       "when": 1776433147131,
       "tag": "0001_narrow_ben_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776475390020,
+      "tag": "0002_windy_silver_samurai",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1776476768362,
+      "tag": "0003_rich_madame_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1776477312743,
+      "tag": "0004_stormy_whistler",
+      "breakpoints": true
     }
   ]
 }

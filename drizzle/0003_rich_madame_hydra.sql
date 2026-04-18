@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `two_fa_setup` boolean DEFAULT false NOT NULL;
