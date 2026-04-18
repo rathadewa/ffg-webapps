@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
@@ -36,6 +37,8 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [key]: e.target.value }));
@@ -47,10 +50,29 @@ export default function RegisterPage() {
     const errs = validate(form);
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => navigate("/login"), 1500);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          nik: Number(form.nik),
+          password: form.password,
+        }),
+      });
+      const json = await res.json() as { data?: string; error?: string };
+      if (!res.ok) {
+        setErrors({ nik: json.error ?? "Registrasi gagal." });
+        return;
+      }
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch {
+      setErrors({ name: "Tidak dapat terhubung ke server." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,20 +88,42 @@ export default function RegisterPage() {
         {success && <div className="alert alert-success">Registrasi berhasil! Mengalihkan ke halaman login…</div>}
 
         <form onSubmit={handleSubmit} noValidate>
-          {FIELDS.map(({ key, label, type, placeholder }) => (
-            <div className="form-group" key={key}>
-              <label className="form-label">{label}</label>
-              <input
-                className="form-input"
-                type={type}
-                placeholder={placeholder}
-                value={form[key]}
-                onChange={handleChange(key)}
-                disabled={success}
-              />
-              {errors[key] && <p className="form-error">{errors[key]}</p>}
-            </div>
-          ))}
+          {FIELDS.map(({ key, label, type, placeholder }) => {
+            const isPassword = key === "password";
+            const isConfirm  = key === "confirmPassword";
+            const show = isPassword ? showPassword : isConfirm ? showConfirm : false;
+            const toggle = isPassword
+              ? () => setShowPassword((v) => !v)
+              : isConfirm
+              ? () => setShowConfirm((v) => !v)
+              : null;
+            return (
+              <div className="form-group" key={key}>
+                <label className="form-label">{label}</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="form-input"
+                    type={(isPassword || isConfirm) ? (show ? "text" : "password") : type}
+                    placeholder={placeholder}
+                    value={form[key]}
+                    onChange={handleChange(key)}
+                    disabled={success}
+                    style={(isPassword || isConfirm) ? { paddingRight: 40 } : undefined}
+                  />
+                  {toggle && (
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0, display: "flex" }}
+                    >
+                      {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  )}
+                </div>
+                {errors[key] && <p className="form-error">{errors[key]}</p>}
+              </div>
+            );
+          })}
           <div style={{ marginTop: 20 }}>
             <button className="btn btn-primary" type="submit" disabled={loading || success}>
               {loading ? "Mendaftarkan…" : "Daftar Sekarang"}

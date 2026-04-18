@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context";
+import {
+  LayoutDashboard, Users, ShieldCheck, BarChart2, Settings,
+  UserPlus, Activity, Zap, LogOut, TrendingUp, TrendingDown,
+} from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -45,18 +50,18 @@ const DUMMY_USERS = [
 ];
 
 const STATS = [
-  { label: "Total Pengguna",  value: "2,847", change: "+12%",  dir: "up",   icon: "👥" },
-  { label: "Aktif Hari Ini",  value: "384",   change: "+5%",   dir: "up",   icon: "🟢" },
-  { label: "Registrasi Baru", value: "47",    change: "+18%",  dir: "up",   icon: "✨" },
-  { label: "Sesi Aktif",      value: "128",   change: "-3%",   dir: "down", icon: "⚡" },
+  { label: "Total Pengguna",  value: "2,847", change: "+12%",  dir: "up",   Icon: Users },
+  { label: "Aktif Hari Ini",  value: "384",   change: "+5%",   dir: "up",   Icon: Activity },
+  { label: "Registrasi Baru", value: "47",    change: "+18%",  dir: "up",   Icon: UserPlus },
+  { label: "Sesi Aktif",      value: "128",   change: "-3%",   dir: "down", Icon: Zap },
 ];
 
 const NAV = [
-  { id: "dashboard", icon: "⊞",  label: "Dashboard",  section: "menu" },
-  { id: "users",     icon: "👥", label: "Pengguna",   section: "menu" },
-  { id: "security",  icon: "🔐", label: "Keamanan",   section: "menu" },
-  { id: "reports",   icon: "📊", label: "Laporan",    section: "menu" },
-  { id: "settings",  icon: "⚙️", label: "Pengaturan", section: "bottom" },
+  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard",  section: "menu" },
+  { id: "users",     Icon: Users,           label: "Pengguna",   section: "menu" },
+  { id: "security",  Icon: ShieldCheck,     label: "Keamanan",   section: "menu" },
+  { id: "reports",   Icon: BarChart2,       label: "Laporan",    section: "menu" },
+  { id: "settings",  Icon: Settings,        label: "Pengaturan", section: "bottom" },
 ];
 
 const STATUS_MAP: Record<string, { cls: string; label: string }> = {
@@ -90,13 +95,33 @@ const ChartTooltip = ({ active, payload, label }: any) => {
 /* ─── Component ─────────────────────────────────────── */
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { setLoggedIn } = useContext(AuthContext);
   const [activeNav, setActiveNav] = useState("dashboard");
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("session_token");
+    if (!token) return;
+    fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json: { data?: { name: string; email: string } }) => {
+        if (json.data) setCurrentUser(json.data);
+      })
+      .catch(() => {});
+  }, []);
 
   const mainNav   = NAV.filter((n) => n.section === "menu");
   const bottomNav = NAV.filter((n) => n.section === "bottom");
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("2fa_setup");
+  const handleLogout = async () => {
+    const token = sessionStorage.getItem("session_token");
+    if (token) {
+      await fetch("/api/users/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+    setLoggedIn(false);
     navigate("/login");
   };
 
@@ -110,41 +135,49 @@ export default function DashboardPage() {
 
         <div className="sidebar-section">Menu</div>
         <nav className="sidebar-nav">
-          {mainNav.map((item) => (
+          {mainNav.map(({ id, Icon, label }) => (
             <button
-              key={item.id}
-              className={`nav-item${activeNav === item.id ? " active" : ""}`}
-              onClick={() => setActiveNav(item.id)}
+              key={id}
+              className={`nav-item${activeNav === id ? " active" : ""}`}
+              onClick={() => setActiveNav(id)}
             >
-              <span className="nav-item-icon">{item.icon}</span>
-              {item.label}
+              <span className="nav-item-icon"><Icon size={16} /></span>
+              {label}
             </button>
           ))}
         </nav>
 
         <div className="sidebar-section">Lainnya</div>
         <nav style={{ padding: "0 6px 8px" }}>
-          {bottomNav.map((item) => (
+          {bottomNav.map(({ id, Icon, label }) => (
             <button
-              key={item.id}
-              className={`nav-item${activeNav === item.id ? " active" : ""}`}
-              onClick={() => setActiveNav(item.id)}
+              key={id}
+              className={`nav-item${activeNav === id ? " active" : ""}`}
+              onClick={() => setActiveNav(id)}
             >
-              <span className="nav-item-icon">{item.icon}</span>
-              {item.label}
+              <span className="nav-item-icon"><Icon size={16} /></span>
+              {label}
             </button>
           ))}
         </nav>
 
         <div className="sidebar-bottom">
-          <div className="sidebar-user" onClick={handleLogout} title="Keluar">
-            <div className="avatar" style={{ width: 28, height: 28, fontSize: 10 }}>IM</div>
-            <div className="sidebar-user-info">
-              <div className="sidebar-user-name">Irfan Maulana</div>
-              <div className="sidebar-user-email">imfaridzqi@gmail.com</div>
+          <div className="sidebar-user">
+            <div className="avatar" style={{ width: 28, height: 28, fontSize: 10 }}>
+              {currentUser?.name?.slice(0, 2).toUpperCase() ?? "??"}
             </div>
-            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>↗</span>
+            <div className="sidebar-user-info">
+              <div className="sidebar-user-name">{currentUser?.name ?? "—"}</div>
+              <div className="sidebar-user-email">{currentUser?.email ?? "—"}</div>
+            </div>
           </div>
+          <button
+            className="btn btn-ghost"
+            onClick={handleLogout}
+            style={{ width: "100%", marginTop: 8, fontSize: 13, gap: 8, justifyContent: "center" }}
+          >
+            <LogOut size={14} /> Keluar
+          </button>
         </div>
       </aside>
 
@@ -154,11 +187,11 @@ export default function DashboardPage() {
         <div className="topbar">
           <div>
             <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Selamat datang kembali, Irfan Maulana 👋</p>
+            <p className="page-subtitle">Selamat datang kembali, {currentUser?.name ?? "—"} 👋</p>
           </div>
           <div className="topbar-right">
             <ThemeToggle />
-            <div className="avatar">IM</div>
+            <div className="avatar">{currentUser?.name?.slice(0, 2).toUpperCase() ?? "??"}</div>
           </div>
         </div>
 
@@ -168,10 +201,14 @@ export default function DashboardPage() {
             <div className="stat-card" key={s.label}>
               <div className="stat-card-top">
                 <span className="stat-label">{s.label}</span>
-                <div className="stat-icon-wrap">{s.icon}</div>
+                <div className="stat-icon-wrap"><s.Icon size={16} /></div>
               </div>
               <div className="stat-value">{s.value}</div>
               <div className={`stat-change${s.dir === "down" ? " down" : ""}`}>
+                {s.dir === "up"
+                  ? <TrendingUp size={12} style={{ display: "inline", marginRight: 3 }} />
+                  : <TrendingDown size={12} style={{ display: "inline", marginRight: 3 }} />
+                }
                 {s.change} <span style={{ color: "var(--text-muted)" }}>dari bulan lalu</span>
               </div>
             </div>

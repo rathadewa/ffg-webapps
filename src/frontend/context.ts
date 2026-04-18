@@ -9,3 +9,13 @@ export const ThemeContext = createContext<ThemeContextValue>({
   theme: "dark",
   toggleTheme: () => {},
 });
+
+export interface AuthContextValue {
+  isLoggedIn: boolean;
+  setLoggedIn: (value: boolean) => void;
+}
+
+export const AuthContext = createContext<AuthContextValue>({
+  isLoggedIn: false,
+  setLoggedIn: () => {},
+});
