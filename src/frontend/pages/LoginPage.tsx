@@ -44,6 +44,9 @@ export default function LoginPage() {
 
   return (
     <div className="page-auth">
+      {/* ── Decorative background ray ── */}
+      <div className="login-ray" aria-hidden="true" />
+
       <ThemeToggle />
 
       <div className="auth-card">

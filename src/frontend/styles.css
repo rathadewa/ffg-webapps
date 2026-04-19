@@ -67,6 +67,23 @@
   --shadow-card: 0 1px 4px rgba(10,30,80,0.08), 0 1px 2px rgba(10,30,80,0.05);
 }
 
+[data-theme="light"] .login-ring-1 {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(37, 99, 235, 0.10) 15%,
+    rgba(99, 102, 241, 0.13) 30%,
+    transparent 45%,
+    transparent 55%,
+    rgba(37, 99, 235, 0.06) 70%,
+    transparent 85%
+  );
+}
+[data-theme="light"] .login-ring-2 {
+  border-color: rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.06), inset 0 0 60px rgba(37, 99, 235, 0.03);
+}
+
 /* ══════════════════════════════════════════════════════════
    THEME TRANSITION (View Transitions API)
 ══════════════════════════════════════════════════════════ */
@@ -193,7 +210,74 @@ img { display: block; max-width: 100%; }
   justify-content: center;
   padding: 64px 16px;
   background-image: radial-gradient(ellipse 90% 55% at 50% -5%, rgba(59,130,246,0.2) 0%, transparent 65%);
+  overflow: hidden;
+  position: relative;
 }
+
+/* ── Login ray (ElysiaJS-style animated gradient) ────────── */
+.login-ray {
+  --stripes: repeating-linear-gradient(
+    100deg,
+    #000 0%, #000 7%,
+    transparent 10%, transparent 12%,
+    #000 16%
+  );
+  --rainbow: repeating-linear-gradient(
+    100deg,
+    #60a5fa 10%,
+    #e879f9 16%,
+    #5eead4 22%,
+    #60a5fa 30%,
+    #a78bfa 40%
+  );
+
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+
+  background-image: var(--stripes), var(--rainbow);
+  background-size: 300%, 200%;
+  background-position: 50% 50%, 50% 50%;
+
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 75%);
+
+  filter: opacity(50%) saturate(200%);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.login-ray::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--stripes), var(--rainbow);
+  background-size: 200%, 100%;
+  background-position: 50% 50%, 50% 50%;
+  mix-blend-mode: difference;
+  animation: ray-flow 90s linear infinite;
+}
+
+@keyframes ray-flow {
+  to { background-position: 350% 350%, 350% 350%; }
+}
+
+/* Light mode — invert stripes to white */
+[data-theme="light"] .login-ray {
+  --stripes: repeating-linear-gradient(
+    100deg,
+    #fff 0%, #fff 7%,
+    transparent 10%, transparent 12%,
+    #fff 16%
+  );
+  filter: invert(100%) hue-rotate(180deg) opacity(60%) saturate(150%);
+}
+
+/* Ensure auth-card sits above ray */
+.page-auth > .auth-card  { position: relative; z-index: 1; }
+.page-auth > .theme-toggle { z-index: 2; }
 
 .auth-card {
   width: 100%;
