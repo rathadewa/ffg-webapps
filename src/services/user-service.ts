@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { users } from "../db/schema/users";
 import { sessions } from "../db/schema/sessions";
-import { eq, or } from "drizzle-orm";
+import { eq, or, and, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { generateSecret } from "otplib";
@@ -65,9 +65,11 @@ export async function loginUser(data: {
   return { token, twoFaSetup: user.twoFaSetup };
 }
 
+const oneHourAgo = () => new Date(Date.now() - 60 * 60 * 1000);
+
 export async function getTwoFaSecret(token: string) {
   const session = await db.query.sessions.findFirst({
-    where: eq(sessions.token, token),
+    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
   });
   if (!session) throw new Error("unauthorised");
 
@@ -87,7 +89,7 @@ export async function getTwoFaSecret(token: string) {
 
 export async function markTwoFaSetup(token: string) {
   const session = await db.query.sessions.findFirst({
-    where: eq(sessions.token, token),
+    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
   });
   if (!session) throw new Error("unauthorised");
   await db.update(users).set({ twoFaSetup: true }).where(eq(users.id, session.userId!));
@@ -99,7 +101,7 @@ export async function logoutUser(token: string) {
 
 export async function getCurrentUser(token: string) {
   const session = await db.query.sessions.findFirst({
-    where: eq(sessions.token, token),
+    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
   });
 
   if (!session) {

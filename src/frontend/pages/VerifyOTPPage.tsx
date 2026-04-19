@@ -1,38 +1,37 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { KeyRound } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
 export default function VerifyOTPPage() {
   const navigate = useNavigate();
-  const [digits, setDigits] = useState(Array(6).fill(""));
-  const [error, setError] = useState("");
+  const [digits, setDigits]   = useState(Array(6).fill(""));
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (i: number, val: string) => {
     if (!/^[0-9]?$/.test(val)) return;
-    const next = [...digits];
-    next[i] = val;
-    setDigits(next);
-    setError("");
+    const next = [...digits]; next[i] = val;
+    setDigits(next); setError("");
     if (val && i < 5) refs.current[i + 1]?.focus();
   };
 
-  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus();
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
     const next = [...digits];
-    pasted.split("").forEach((c, i) => (next[i] = c));
+    pasted.split("").forEach((c, idx) => (next[idx] = c));
     setDigits(next);
     refs.current[Math.min(pasted.length, 5)]?.focus();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (digits.join("").length < 6) { setError("Masukkan 6 digit kode OTP."); return; }
     setLoading(true);
@@ -42,26 +41,34 @@ export default function VerifyOTPPage() {
   };
 
   return (
-    <div className="auth-container">
+    <div className="page-auth">
       <ThemeToggle />
+
       <div className="auth-card">
-        <Logo />
-        <div className="auth-header">
-          <h1 className="auth-title">Verifikasi identitas</h1>
-          <p className="auth-subtitle">
-            Masukkan 6 digit kode dari <strong>Google Authenticator</strong> untuk akun FFG WebApps.
+        <div className="auth-logo">
+          <Logo />
+        </div>
+
+        <div className="auth-center">
+          <div className="auth-icon">
+            <KeyRound size={24} />
+          </div>
+          <h1>Verifikasi identitas</h1>
+          <p>
+            Masukkan 6 digit kode dari{" "}
+            <strong style={{ color: "var(--fg)", fontWeight: 600 }}>Google Authenticator</strong>
           </p>
         </div>
 
         {error && <div className="alert alert-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="otp-container" onPaste={handlePaste}>
+          <div className="otp-row" onPaste={handlePaste}>
             {digits.map((d, i) => (
               <input
                 key={i}
-                ref={(el) => (refs.current[i] = el)}
-                className="otp-input"
+                ref={(el) => { refs.current[i] = el; }}
+                className="otp-box"
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
@@ -73,15 +80,15 @@ export default function VerifyOTPPage() {
             ))}
           </div>
 
-          <button className="btn btn-primary" type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} className="btn btn-primary">
             {loading ? "Memverifikasi…" : "Verifikasi"}
           </button>
         </form>
 
-        <div className="auth-link" style={{ marginTop: 16 }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate("/login"); }}>
+        <div className="auth-foot">
+          <button className="auth-back-btn" onClick={() => navigate("/login")}>
             ← Kembali ke login
-          </a>
+          </button>
         </div>
       </div>
     </div>
