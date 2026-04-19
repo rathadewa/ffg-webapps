@@ -1,11 +1,12 @@
 import { useState, useContext, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthContext } from "../context";
 import {
   LayoutDashboard, Users, ShieldCheck, BarChart2, Settings,
   UserPlus, Activity, Zap, LogOut, TrendingUp, TrendingDown,
-  PanelLeftClose, PanelLeftOpen, Menu, X,
+  PanelLeftClose, PanelLeftOpen, Menu, X, Upload,
 } from "lucide-react";
+import { isAdminOrManager } from "../app";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,6 +14,8 @@ import {
 } from "recharts";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
+import ManageUsersView from "./ManageUsersView";
+import UploadView from "./UploadView";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -53,10 +56,11 @@ const STATS = [
   { label: "Sesi Aktif",      value: "128",   change: "-3%",  up: false, Icon: Zap },
 ];
 const NAV = [
-  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard" },
-  { id: "users",     Icon: Users,           label: "Pengguna" },
-  { id: "security",  Icon: ShieldCheck,     label: "Keamanan" },
-  { id: "reports",   Icon: BarChart2,       label: "Laporan" },
+  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard",  adminOnly: false },
+  { id: "users",     Icon: Users,           label: "Pengguna",   adminOnly: true  },
+  { id: "upload",    Icon: Upload,          label: "Upload Data", adminOnly: true  },
+  { id: "security",  Icon: ShieldCheck,     label: "Keamanan",   adminOnly: false },
+  { id: "reports",   Icon: BarChart2,       label: "Laporan",    adminOnly: false },
 ];
 const NAV_BOTTOM = [
   { id: "settings", Icon: Settings, label: "Pengaturan" },
@@ -132,18 +136,26 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { setLoggedIn } = useContext(AuthContext);
 
-  const [activeNav, setActiveNav]     = useState("dashboard");
-  const [collapsed, setCollapsed]     = useState(false);
-  const [mobileOpen, setMobileOpen]   = useState(false);
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+  const [searchParams, setSearchParams]   = useSearchParams();
+  const activeNav = searchParams.get("tab") ?? "dashboard";
+  const setActiveNav = (id: string) => setSearchParams({ tab: id }, { replace: true });
+
+  const [collapsed, setCollapsed]         = useState(false);
+  const [mobileOpen, setMobileOpen]       = useState(false);
+  const [currentUser, setCurrentUser]     = useState<{ name: string; email: string; role: string } | null>(null);
+  const [canManageUsers, setCanManageUsers] = useState(isAdminOrManager());
 
   useEffect(() => {
     const token = localStorage.getItem("session_token");
     if (!token) return;
     fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
-      .then((json: { data?: { name: string; email: string } }) => {
-        if (json.data) setCurrentUser(json.data);
+      .then((json: { data?: { name: string; email: string; role: string } }) => {
+        if (json.data) {
+          setCurrentUser(json.data);
+          localStorage.setItem("user_role", json.data.role);
+          setCanManageUsers(["Administrator", "Manager"].includes(json.data.role));
+        }
       })
       .catch(() => {});
   }, []);
@@ -184,7 +196,7 @@ export default function DashboardPage() {
 
         <nav className="sidebar-nav">
           {!collapsed && <p className="nav-section-label">Menu</p>}
-          {NAV.map(({ id, Icon, label }) => (
+          {NAV.filter((n) => !n.adminOnly || canManageUsers).map(({ id, Icon, label }) => (
             <button
               key={id}
               className={`nav-link${activeNav === id ? " active" : ""}`}
@@ -216,7 +228,7 @@ export default function DashboardPage() {
               <div className="avatar">{initials}</div>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">{currentUser.name}</div>
-                <div className="sidebar-user-email">{currentUser.email}</div>
+                <div className="sidebar-user-email">{currentUser.role}</div>
               </div>
             </div>
           )}
@@ -241,7 +253,9 @@ export default function DashboardPage() {
               {mobileOpen ? <X size={16} /> : <Menu size={16} />}
             </button>
             <div>
-              <div className="topbar-title">Dashboard</div>
+              <div className="topbar-title">
+                {NAV.find((n) => n.id === activeNav)?.label ?? NAV_BOTTOM.find((n) => n.id === activeNav)?.label ?? "Dashboard"}
+              </div>
               <p className="topbar-sub">
                 Selamat datang, <span>{currentUser?.name ?? "—"}</span>
               </p>
@@ -254,6 +268,13 @@ export default function DashboardPage() {
         </header>
 
         <main className="content">
+
+          {/* Admin-only views */}
+          {activeNav === "users"  && <ManageUsersView />}
+          {activeNav === "upload" && <UploadView />}
+
+          {/* Dashboard content */}
+          {activeNav !== "users" && activeNav !== "upload" && <>
 
           {/* Stats */}
           <div className="stat-grid">
@@ -361,6 +382,8 @@ export default function DashboardPage() {
               </div>
             </Card>
           </div>
+
+          </>}
 
         </main>
       </div>

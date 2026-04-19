@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { startSession } from "../app";
 import ThemeToggle from "../components/ThemeToggle";
@@ -97,10 +97,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="auth-foot">
-          Belum punya akun?{" "}
-          <Link to="/register">Daftar sekarang</Link>
-        </div>
       </div>
     </div>
   );

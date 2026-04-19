@@ -36,6 +36,20 @@
       "when": 1776477312743,
       "tag": "0004_stormy_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1776567847795,
+      "tag": "0005_moaning_butterfly",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1776570323785,
+      "tag": "0006_tricky_eddie_brock",
+      "breakpoints": true
     }
   ]
 }

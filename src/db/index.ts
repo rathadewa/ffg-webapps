@@ -2,8 +2,10 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import * as usersSchema from "./schema/users";
 import * as sessionsSchema from "./schema/sessions";
+import * as ffgIndihomeSchema from "./schema/ffg_indihome";
+import * as ffgIndibizSchema from "./schema/ffg_indibiz";
 
-const schema = { ...usersSchema, ...sessionsSchema };
+const schema = { ...usersSchema, ...sessionsSchema, ...ffgIndihomeSchema, ...ffgIndibizSchema };
 
 const pool = mysql.createPool({
   host: Bun.env.DB_HOST ?? "localhost",
