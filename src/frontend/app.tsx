@@ -9,16 +9,33 @@ import Verify2FAPage from "./pages/Verify2FAPage";
 import Setup2FAPage from "./pages/Setup2FAPage";
 import DashboardPage from "./pages/DashboardPage";
 
+const SESSION_DURATION = 60 * 60 * 1000; // 1 jam
+
+export function isSessionValid(): boolean {
+  if (localStorage.getItem("is_logged_in") !== "true") return false;
+  const expires = Number(localStorage.getItem("session_expires") ?? "0");
+  return Date.now() < expires;
+}
+
+export function clearSession() {
+  localStorage.removeItem("is_logged_in");
+  localStorage.removeItem("session_token");
+  localStorage.removeItem("session_expires");
+}
+
+export function startSession(token: string) {
+  localStorage.setItem("session_token", token);
+  localStorage.setItem("session_expires", String(Date.now() + SESSION_DURATION));
+}
+
 // Hanya bisa diakses jika sudah login — jika belum, redirect ke /login
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isLoggedIn = sessionStorage.getItem("is_logged_in") === "true";
-  return isLoggedIn ? <>{children}</> : <Navigate to="/login" replace />;
+  return isSessionValid() ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 // Hanya bisa diakses jika BELUM login — jika sudah login, redirect ke /dashboard
 function GuestRoute({ children }: { children: React.ReactNode }) {
-  const isLoggedIn = sessionStorage.getItem("is_logged_in") === "true";
-  return isLoggedIn ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return isSessionValid() ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
 
 function App() {
@@ -26,9 +43,7 @@ function App() {
     return (localStorage.getItem("theme") as "dark" | "light") || "dark";
   });
 
-  const [isLoggedIn, setLoggedIn] = useState(
-    () => sessionStorage.getItem("is_logged_in") === "true"
-  );
+  const [isLoggedIn, setLoggedIn] = useState(() => isSessionValid());
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -39,10 +54,9 @@ function App() {
 
   const handleSetLoggedIn = (value: boolean) => {
     if (value) {
-      sessionStorage.setItem("is_logged_in", "true");
+      localStorage.setItem("is_logged_in", "true");
     } else {
-      sessionStorage.removeItem("is_logged_in");
-      sessionStorage.removeItem("2fa_setup");
+      clearSession();
     }
     setLoggedIn(value);
   };

@@ -1,19 +1,20 @@
-import React, { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context";
 import {
   LayoutDashboard, Users, ShieldCheck, BarChart2, Settings,
   UserPlus, Activity, Zap, LogOut, TrendingUp, TrendingDown,
+  PanelLeftClose, PanelLeftOpen, Menu, X,
 } from "lucide-react";
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
-/* ─── Dummy data ────────────────────────────────────── */
+/* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
   { day: "Sen", registrasi: 12, aktif: 45 },
   { day: "Sel", registrasi: 8,  aktif: 38 },
@@ -23,7 +24,6 @@ const WEEKLY = [
   { day: "Sab", registrasi: 7,  aktif: 28 },
   { day: "Min", registrasi: 11, aktif: 41 },
 ];
-
 const MONTHLY = [
   { bulan: "Okt", pengguna: 1240 },
   { bulan: "Nov", pengguna: 1580 },
@@ -33,74 +33,112 @@ const MONTHLY = [
   { bulan: "Mar", pengguna: 2600 },
   { bulan: "Apr", pengguna: 2847 },
 ];
-
 const STATUS_PIE = [
   { name: "Aktif",       value: 1980, color: "#34d399" },
   { name: "Menunggu",    value: 540,  color: "#fbbf24" },
   { name: "Tidak Aktif", value: 327,  color: "#f87171" },
 ];
-
-const DUMMY_USERS = [
-  { id: 1, name: "Irfan Maulana",  email: "imfaridzqi@gmail.com", nik: "225668",  status: "active",   joined: "2026-04-15" },
-  { id: 2, name: "Budi Santoso",   email: "budi@example.com",     nik: "112233",  status: "active",   joined: "2026-04-14" },
-  { id: 3, name: "Siti Rahayu",    email: "siti@example.com",     nik: "334455",  status: "pending",  joined: "2026-04-13" },
-  { id: 4, name: "Andi Pratama",   email: "andi@example.com",     nik: "556677",  status: "active",   joined: "2026-04-12" },
-  { id: 5, name: "Dewi Kusuma",    email: "dewi@example.com",     nik: "778899",  status: "inactive", joined: "2026-04-11" },
-  { id: 6, name: "Rizky Fauzan",   email: "rizky@example.com",    nik: "990011",  status: "active",   joined: "2026-04-10" },
+const USERS = [
+  { id: 1, name: "Irfan Maulana", email: "imfaridzqi@gmail.com", nik: "225668", status: "active",   joined: "2026-04-15" },
+  { id: 2, name: "Budi Santoso",  email: "budi@example.com",     nik: "112233", status: "active",   joined: "2026-04-14" },
+  { id: 3, name: "Siti Rahayu",   email: "siti@example.com",     nik: "334455", status: "pending",  joined: "2026-04-13" },
+  { id: 4, name: "Andi Pratama",  email: "andi@example.com",     nik: "556677", status: "active",   joined: "2026-04-12" },
+  { id: 5, name: "Dewi Kusuma",   email: "dewi@example.com",     nik: "778899", status: "inactive", joined: "2026-04-11" },
+  { id: 6, name: "Rizky Fauzan",  email: "rizky@example.com",    nik: "990011", status: "active",   joined: "2026-04-10" },
 ];
-
 const STATS = [
-  { label: "Total Pengguna",  value: "2,847", change: "+12%",  dir: "up",   Icon: Users },
-  { label: "Aktif Hari Ini",  value: "384",   change: "+5%",   dir: "up",   Icon: Activity },
-  { label: "Registrasi Baru", value: "47",    change: "+18%",  dir: "up",   Icon: UserPlus },
-  { label: "Sesi Aktif",      value: "128",   change: "-3%",   dir: "down", Icon: Zap },
+  { label: "Total Pengguna",  value: "2,847", change: "+12%", up: true,  Icon: Users },
+  { label: "Aktif Hari Ini",  value: "384",   change: "+5%",  up: true,  Icon: Activity },
+  { label: "Registrasi Baru", value: "47",    change: "+18%", up: true,  Icon: UserPlus },
+  { label: "Sesi Aktif",      value: "128",   change: "-3%",  up: false, Icon: Zap },
 ];
-
 const NAV = [
-  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard",  section: "menu" },
-  { id: "users",     Icon: Users,           label: "Pengguna",   section: "menu" },
-  { id: "security",  Icon: ShieldCheck,     label: "Keamanan",   section: "menu" },
-  { id: "reports",   Icon: BarChart2,       label: "Laporan",    section: "menu" },
-  { id: "settings",  Icon: Settings,        label: "Pengaturan", section: "bottom" },
+  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard" },
+  { id: "users",     Icon: Users,           label: "Pengguna" },
+  { id: "security",  Icon: ShieldCheck,     label: "Keamanan" },
+  { id: "reports",   Icon: BarChart2,       label: "Laporan" },
 ];
-
-const STATUS_MAP: Record<string, { cls: string; label: string }> = {
-  active:   { cls: "badge-success", label: "Aktif" },
-  pending:  { cls: "badge-warning", label: "Menunggu" },
-  inactive: { cls: "badge-error",   label: "Nonaktif" },
+const NAV_BOTTOM = [
+  { id: "settings", Icon: Settings, label: "Pengaturan" },
+];
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  active:   { label: "Aktif",    cls: "badge badge-success" },
+  pending:  { label: "Menunggu", cls: "badge badge-warning" },
+  inactive: { label: "Nonaktif", cls: "badge badge-error"   },
 };
 
-/* ─── Custom tooltip ────────────────────────────────── */
-const ChartTooltip = ({ active, payload, label }: any) => {
+/* ── Sub-components ──────────────────────────────────────── */
+function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: "var(--bg-elevated)",
-      border: "1px solid var(--border-strong)",
-      borderRadius: "var(--radius)",
-      padding: "10px 14px",
-      fontSize: 13,
-      boxShadow: "var(--shadow-md)",
+      background: "var(--bg-raised)", border: "1px solid var(--border-strong)",
+      borderRadius: 10, padding: "12px 16px", boxShadow: "var(--shadow-md)",
+      fontFamily: "var(--font-sans)", fontSize: 13,
     }}>
-      <p style={{ color: "var(--text)", fontWeight: 600, marginBottom: 6 }}>{label}</p>
-      {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color, marginBottom: 2 }}>
-          {p.name}: <strong>{p.value.toLocaleString()}</strong>
+      {label && (
+        <p style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-faint)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+          {label}
         </p>
+      )}
+      {payload.map((p: any) => (
+        <div key={p.dataKey} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, marginBottom: 4 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: p.color, flexShrink: 0, display: "inline-block" }} />
+          <span style={{ color: "var(--fg-dim)" }}>{p.name}:</span>
+          <span style={{ fontWeight: 600, color: "var(--fg)" }}>{p.value.toLocaleString()}</span>
+        </div>
       ))}
     </div>
   );
-};
+}
 
-/* ─── Component ─────────────────────────────────────── */
+function StatCard({ label, value, change, up, Icon }: typeof STATS[0]) {
+  return (
+    <div className="stat-card">
+      <div className="stat-card-top">
+        <p className="stat-card-label">{label}</p>
+        <div className="stat-icon"><Icon size={14} /></div>
+      </div>
+      <div>
+        <p className="stat-value">{value}</p>
+        <p className={`stat-trend ${up ? "up" : "down"}`}>
+          {up ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+          {change}
+          <span>vs bulan lalu</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="card">{children}</div>;
+}
+
+function CardHead({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
+  return (
+    <div className="card-head">
+      <div>
+        <p className="card-title">{title}</p>
+        {subtitle && <p className="card-sub">{subtitle}</p>}
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* ── Main ────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { setLoggedIn } = useContext(AuthContext);
-  const [activeNav, setActiveNav] = useState("dashboard");
+
+  const [activeNav, setActiveNav]     = useState("dashboard");
+  const [collapsed, setCollapsed]     = useState(false);
+  const [mobileOpen, setMobileOpen]   = useState(false);
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("session_token");
+    const token = localStorage.getItem("session_token");
     if (!token) return;
     fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
@@ -110,240 +148,222 @@ export default function DashboardPage() {
       .catch(() => {});
   }, []);
 
-  const mainNav   = NAV.filter((n) => n.section === "menu");
-  const bottomNav = NAV.filter((n) => n.section === "bottom");
+  const initials = currentUser?.name?.slice(0, 2).toUpperCase() ?? "??";
 
   const handleLogout = async () => {
-    const token = sessionStorage.getItem("session_token");
-    if (token) {
-      await fetch("/api/users/logout", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    }
+    const token = localStorage.getItem("session_token");
+    if (token) await fetch("/api/users/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     setLoggedIn(false);
     navigate("/login");
   };
 
-  const axisStyle = { fill: "var(--text-muted)", fontSize: 11 };
+  const axisProps = { fill: "var(--fg-faint)", fontSize: 11, fontFamily: "var(--font-sans)" };
 
   return (
-    <div className="dashboard-layout">
-      {/* ── Sidebar ── */}
-      <aside className="sidebar">
-        <div className="sidebar-logo"><Logo /></div>
+    <div className="dashboard">
 
-        <div className="sidebar-section">Menu</div>
-        <nav className="sidebar-nav">
-          {mainNav.map(({ id, Icon, label }) => (
-            <button
-              key={id}
-              className={`nav-item${activeNav === id ? " active" : ""}`}
-              onClick={() => setActiveNav(id)}
-            >
-              <span className="nav-item-icon"><Icon size={16} /></span>
-              {label}
-            </button>
-          ))}
-        </nav>
+      {/* Mobile overlay */}
+      <div
+        className={`mobile-overlay${mobileOpen ? " show" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
 
-        <div className="sidebar-section">Lainnya</div>
-        <nav style={{ padding: "0 6px 8px" }}>
-          {bottomNav.map(({ id, Icon, label }) => (
-            <button
-              key={id}
-              className={`nav-item${activeNav === id ? " active" : ""}`}
-              onClick={() => setActiveNav(id)}
-            >
-              <span className="nav-item-icon"><Icon size={16} /></span>
-              {label}
-            </button>
-          ))}
-        </nav>
+      {/* ── Sidebar ──────────────────────────────────────── */}
+      <aside className={`sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
 
-        <div className="sidebar-bottom">
-          <div className="sidebar-user">
-            <div className="avatar" style={{ width: 28, height: 28, fontSize: 10 }}>
-              {currentUser?.name?.slice(0, 2).toUpperCase() ?? "??"}
-            </div>
-            <div className="sidebar-user-info">
-              <div className="sidebar-user-name">{currentUser?.name ?? "—"}</div>
-              <div className="sidebar-user-email">{currentUser?.email ?? "—"}</div>
-            </div>
-          </div>
+        <div className="sidebar-header">
+          {!collapsed && <Logo />}
           <button
-            className="btn btn-ghost"
-            onClick={handleLogout}
-            style={{ width: "100%", marginTop: 8, fontSize: 13, gap: 8, justifyContent: "center" }}
+            className="sidebar-toggle"
+            onClick={() => setCollapsed((v) => !v)}
+            title={collapsed ? "Buka sidebar" : "Tutup sidebar"}
           >
-            <LogOut size={14} /> Keluar
+            {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          {!collapsed && <p className="nav-section-label">Menu</p>}
+          {NAV.map(({ id, Icon, label }) => (
+            <button
+              key={id}
+              className={`nav-link${activeNav === id ? " active" : ""}`}
+              onClick={() => { setActiveNav(id); setMobileOpen(false); }}
+              title={collapsed ? label : undefined}
+            >
+              <Icon size={16} />
+              {!collapsed && <span>{label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          {!collapsed && <p className="nav-section-label">Lainnya</p>}
+          {NAV_BOTTOM.map(({ id, Icon, label }) => (
+            <button
+              key={id}
+              className={`nav-link${activeNav === id ? " active" : ""}`}
+              onClick={() => { setActiveNav(id); setMobileOpen(false); }}
+              title={collapsed ? label : undefined}
+            >
+              <Icon size={16} />
+              {!collapsed && <span>{label}</span>}
+            </button>
+          ))}
+
+          {!collapsed && currentUser && (
+            <div className="sidebar-user">
+              <div className="avatar">{initials}</div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{currentUser.name}</div>
+                <div className="sidebar-user-email">{currentUser.email}</div>
+              </div>
+            </div>
+          )}
+
+          <button
+            className="nav-link danger"
+            onClick={handleLogout}
+            title={collapsed ? "Keluar" : undefined}
+          >
+            <LogOut size={15} />
+            {!collapsed && <span>Keluar</span>}
           </button>
         </div>
       </aside>
 
-      {/* ── Main ── */}
-      <main className="main-content">
-        {/* Topbar */}
-        <div className="topbar">
-          <div>
-            <h1 className="page-title">Dashboard</h1>
-            <p className="page-subtitle">Selamat datang kembali, {currentUser?.name ?? "—"} 👋</p>
+      {/* ── Main ─────────────────────────────────────────── */}
+      <div className="main">
+
+        <header className="topbar">
+          <div className="topbar-left">
+            <button className="hamburger" onClick={() => setMobileOpen((v) => !v)}>
+              {mobileOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
+            <div>
+              <div className="topbar-title">Dashboard</div>
+              <p className="topbar-sub">
+                Selamat datang, <span>{currentUser?.name ?? "—"}</span>
+              </p>
+            </div>
           </div>
           <div className="topbar-right">
-            <ThemeToggle />
-            <div className="avatar">{currentUser?.name?.slice(0, 2).toUpperCase() ?? "??"}</div>
+            <ThemeToggle fixed={false} />
+            <div className="avatar avatar-lg">{initials}</div>
           </div>
-        </div>
+        </header>
 
-        {/* Stats */}
-        <div className="stats-grid">
-          {STATS.map((s) => (
-            <div className="stat-card" key={s.label}>
-              <div className="stat-card-top">
-                <span className="stat-label">{s.label}</span>
-                <div className="stat-icon-wrap"><s.Icon size={16} /></div>
+        <main className="content">
+
+          {/* Stats */}
+          <div className="stat-grid">
+            {STATS.map((s) => <StatCard key={s.label} {...s} />)}
+          </div>
+
+          {/* Row 1: Area chart (wide) + Pie */}
+          <div className="chart-grid">
+            <Card>
+              <CardHead title="Aktivitas 7 Hari Terakhir" subtitle="Registrasi & pengguna aktif" />
+              <div style={{ padding: "20px 20px 12px" }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={WEEKLY} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                    <defs>
+                      <linearGradient id="gReg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gAktif" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#34d399" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.07)" />
+                    <XAxis dataKey="day"  tick={axisProps} axisLine={false} tickLine={false} />
+                    <YAxis              tick={axisProps} axisLine={false} tickLine={false} />
+                    <Tooltip content={<ChartTooltip />} />
+                    <Area type="monotone" dataKey="registrasi" name="Registrasi" stroke="#3b82f6" strokeWidth={2} fill="url(#gReg)"   dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                    <Area type="monotone" dataKey="aktif"      name="Aktif"      stroke="#34d399" strokeWidth={2} fill="url(#gAktif)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-              <div className="stat-value">{s.value}</div>
-              <div className={`stat-change${s.dir === "down" ? " down" : ""}`}>
-                {s.dir === "up"
-                  ? <TrendingUp size={12} style={{ display: "inline", marginRight: 3 }} />
-                  : <TrendingDown size={12} style={{ display: "inline", marginRight: 3 }} />
+            </Card>
+
+            <Card>
+              <CardHead title="Status Pengguna" />
+              <div style={{ padding: 16 }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={STATUS_PIE} cx="50%" cy="43%" innerRadius={52} outerRadius={78} paddingAngle={3} dataKey="value">
+                      {STATUS_PIE.map((e, i) => <Cell key={i} fill={e.color} strokeWidth={0} />)}
+                    </Pie>
+                    <Tooltip content={<ChartTooltip />} />
+                    <Legend
+                      iconType="circle"
+                      iconSize={7}
+                      wrapperStyle={{ fontSize: 12 }}
+                      formatter={(v) => <span style={{ color: "var(--fg-dim)" }}>{v}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+
+          {/* Row 2: Bar chart + Table (wide) */}
+          <div className="chart-grid chart-grid-rev">
+            <Card>
+              <CardHead title="Pertumbuhan Pengguna" subtitle="6 bulan terakhir" />
+              <div style={{ padding: "20px 20px 12px" }}>
+                <ResponsiveContainer width="100%" height={210}>
+                  <BarChart data={MONTHLY} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.07)" vertical={false} />
+                    <XAxis dataKey="bulan" tick={axisProps} axisLine={false} tickLine={false} />
+                    <YAxis               tick={axisProps} axisLine={false} tickLine={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.05)" }} />
+                    <Bar dataKey="pengguna" name="Pengguna" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card>
+              <CardHead
+                title="Pengguna Terbaru"
+                right={
+                  <span className="badge badge-success">{USERS.length} pengguna</span>
                 }
-                {s.change} <span style={{ color: "var(--text-muted)" }}>dari bulan lalu</span>
+              />
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      {["#", "Nama", "Email", "NIK", "Status", "Bergabung"].map((h) => (
+                        <th key={h}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {USERS.map((u) => {
+                      const s = STATUS_MAP[u.status] ?? STATUS_MAP["inactive"]!;
+                      return (
+                        <tr key={u.id}>
+                          <td className="td-id">{u.id}</td>
+                          <td className="td-name">{u.name}</td>
+                          <td className="td-email">{u.email}</td>
+                          <td className="td-nik">{u.nik}</td>
+                          <td><span className={s.cls}>{s.label}</span></td>
+                          <td className="td-date">{u.joined}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Row 1: Area chart + Pie chart */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 14, marginBottom: 16 }}>
-
-          {/* Area chart: registrasi & pengguna aktif per hari */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <span className="chart-title">Aktivitas 7 Hari Terakhir</span>
-              <span className="chart-subtitle">Registrasi & pengguna aktif</span>
-            </div>
-            <div className="chart-body">
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={WEEKLY} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                  <defs>
-                    <linearGradient id="gradReg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradAktif" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#34d399" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.07)" />
-                  <XAxis dataKey="day" tick={axisStyle} axisLine={false} tickLine={false} />
-                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Area type="monotone" dataKey="registrasi" name="Registrasi"
-                    stroke="#3b82f6" strokeWidth={2} fill="url(#gradReg)" dot={false} />
-                  <Area type="monotone" dataKey="aktif" name="Aktif"
-                    stroke="#34d399" strokeWidth={2} fill="url(#gradAktif)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            </Card>
           </div>
 
-          {/* Pie chart: status pengguna */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <span className="chart-title">Status Pengguna</span>
-            </div>
-            <div className="chart-body" style={{ padding: "10px 10px 0" }}>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={STATUS_PIE}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={55}
-                    outerRadius={80}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {STATUS_PIE.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} strokeWidth={0} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ChartTooltip />} />
-                  <Legend
-                    iconType="circle"
-                    iconSize={8}
-                    formatter={(value) => (
-                      <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>{value}</span>
-                    )}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 2: Bar chart growth + table */}
-        <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 14, marginBottom: 16 }}>
-
-          {/* Bar chart: pertumbuhan bulanan */}
-          <div className="chart-card">
-            <div className="chart-header">
-              <span className="chart-title">Pertumbuhan Pengguna</span>
-              <span className="chart-subtitle">6 bulan terakhir</span>
-            </div>
-            <div className="chart-body">
-              <ResponsiveContainer width="100%" height={195}>
-                <BarChart data={MONTHLY} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.07)" vertical={false} />
-                  <XAxis dataKey="bulan" tick={axisStyle} axisLine={false} tickLine={false} />
-                  <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.06)" }} />
-                  <Bar dataKey="pengguna" name="Pengguna" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* User table */}
-          <div className="table-card" style={{ marginBottom: 0 }}>
-            <div className="table-header">
-              <span className="table-title">Pengguna Terbaru</span>
-              <span className="table-subtitle">{DUMMY_USERS.length} pengguna</span>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nama</th>
-                  <th>Email</th>
-                  <th>NIK</th>
-                  <th>Status</th>
-                  <th>Bergabung</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DUMMY_USERS.map((u) => (
-                  <tr key={u.id}>
-                    <td style={{ color: "var(--text-muted)", fontSize: 12 }}>{u.id}</td>
-                    <td className="td-primary">{u.name}</td>
-                    <td>{u.email}</td>
-                    <td className="td-mono">{u.nik}</td>
-                    <td>
-                      <span className={`badge ${STATUS_MAP[u.status].cls}`}>
-                        {STATUS_MAP[u.status].label}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: 12 }}>{u.joined}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
