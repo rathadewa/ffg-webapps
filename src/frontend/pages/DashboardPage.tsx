@@ -4,7 +4,7 @@ import { AuthContext } from "../context";
 import {
   LayoutDashboard, Users, ShieldCheck, BarChart2, Settings,
   UserPlus, Activity, Zap, LogOut, TrendingUp, TrendingDown,
-  PanelLeftClose, PanelLeftOpen, Menu, X, Upload,
+  PanelLeftClose, PanelLeftOpen, Menu, X, Upload, Trophy,
 } from "lucide-react";
 import { isAdminOrManager } from "../app";
 import {
@@ -17,6 +17,7 @@ import Logo from "../components/Logo";
 import ManageUsersView from "./ManageUsersView";
 import UploadView from "./UploadView";
 import CombinedDataTable from "./CombinedDataTable";
+import LeaderboardView from "./LeaderboardView";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -57,11 +58,12 @@ const STATS = [
   { label: "Sesi Aktif",      value: "128",   change: "-3%",  up: false, Icon: Zap },
 ];
 const NAV = [
-  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard",  adminOnly: false },
-  { id: "users",     Icon: Users,           label: "Pengguna",   adminOnly: true  },
-  { id: "upload",    Icon: Upload,          label: "Upload Data", adminOnly: true  },
-  { id: "security",  Icon: ShieldCheck,     label: "Keamanan",   adminOnly: false },
-  { id: "reports",   Icon: BarChart2,       label: "Laporan",    adminOnly: false },
+  { id: "dashboard",   Icon: LayoutDashboard, label: "Dashboard",    adminOnly: false },
+  { id: "leaderboard", Icon: Trophy,          label: "Leaderboard",  adminOnly: false },
+  { id: "users",       Icon: Users,           label: "Pengguna",     adminOnly: true  },
+  { id: "upload",      Icon: Upload,          label: "Upload Data",  adminOnly: true  },
+  { id: "security",    Icon: ShieldCheck,     label: "Keamanan",     adminOnly: false },
+  { id: "reports",     Icon: BarChart2,       label: "Laporan",      adminOnly: false },
 ];
 const NAV_BOTTOM = [
   { id: "settings", Icon: Settings, label: "Pengaturan" },
@@ -270,12 +272,13 @@ export default function DashboardPage() {
 
         <main className="content">
 
-          {/* Admin-only views */}
-          {activeNav === "users"  && <ManageUsersView />}
-          {activeNav === "upload" && <UploadView />}
+          {/* Views */}
+          {activeNav === "users"       && <ManageUsersView />}
+          {activeNav === "upload"      && <UploadView />}
+          {activeNav === "leaderboard" && <LeaderboardView />}
 
           {/* Dashboard content */}
-          {activeNav !== "users" && activeNav !== "upload" && <>
+          {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard" && <>
 
           {/* Stats */}
           <div className="stat-grid">

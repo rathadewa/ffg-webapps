@@ -101,7 +101,7 @@ export default function CombinedDataTable() {
   const [sortBy,  setSortBy]  = useState("no_order");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page,    setPage]    = useState(1);
-  const limit = 25;
+  const limit = 20;
 
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -265,7 +265,7 @@ export default function CombinedDataTable() {
       </div>
 
       {/* ── Pagination ──────────────────────────────────── */}
-      {data && data.totalPages > 1 && (
+      {data && (
         <Pagination
           page={page}
           totalPages={data.totalPages}
