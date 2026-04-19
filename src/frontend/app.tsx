@@ -34,6 +34,7 @@ export function clearSession() {
 }
 
 export function startSession(token: string) {
+  localStorage.removeItem("is_logged_in"); // pastikan 2FA wajib diselesaikan dulu
   localStorage.setItem("session_token", token);
   localStorage.setItem("session_expires", String(Date.now() + SESSION_DURATION));
 }

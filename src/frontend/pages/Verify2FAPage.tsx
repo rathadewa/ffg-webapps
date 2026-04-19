@@ -58,6 +58,7 @@ export default function Verify2FAPage() {
 
   return (
     <div className="page-auth">
+      <div className="login-ray" aria-hidden="true" />
       <ThemeToggle />
 
       <div className="auth-card">
