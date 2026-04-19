@@ -10,6 +10,7 @@ import Setup2FAPage from "./pages/Setup2FAPage";
 import DashboardPage from "./pages/DashboardPage";
 
 const SESSION_DURATION = 60 * 60 * 1000; // 1 jam
+const ADMIN_ROLES = ["Administrator", "Manager"];
 
 export function isSessionValid(): boolean {
   if (localStorage.getItem("is_logged_in") !== "true") return false;
@@ -17,10 +18,19 @@ export function isSessionValid(): boolean {
   return Date.now() < expires;
 }
 
+export function getUserRole(): string | null {
+  return localStorage.getItem("user_role");
+}
+
+export function isAdminOrManager(): boolean {
+  return ADMIN_ROLES.includes(getUserRole() ?? "");
+}
+
 export function clearSession() {
   localStorage.removeItem("is_logged_in");
   localStorage.removeItem("session_token");
   localStorage.removeItem("session_expires");
+  localStorage.removeItem("user_role");
 }
 
 export function startSession(token: string) {
@@ -31,6 +41,34 @@ export function startSession(token: string) {
 // Hanya bisa diakses jika sudah login — jika belum, redirect ke /login
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return isSessionValid() ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+// Hanya bisa diakses jika sudah login DAN punya role admin/manager.
+// Jika role belum ada di localStorage (pertama kali), fetch dulu sebelum memutuskan.
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = React.useState(getUserRole() !== null);
+  const [allowed, setAllowed] = React.useState(isAdminOrManager());
+
+  React.useEffect(() => {
+    if (ready) return;
+    const token = localStorage.getItem("session_token");
+    if (!token) { setReady(true); return; }
+    fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((json: { data?: { role: string } }) => {
+        if (json.data?.role) {
+          localStorage.setItem("user_role", json.data.role);
+          setAllowed(ADMIN_ROLES.includes(json.data.role));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setReady(true));
+  }, [ready]);
+
+  if (!isSessionValid()) return <Navigate to="/login" replace />;
+  if (!ready) return null;
+  if (!allowed) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 }
 
 // Hanya bisa diakses jika BELUM login — jika sudah login, redirect ke /dashboard
@@ -69,8 +107,10 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
 
             {/* Guest routes — redirect ke /dashboard jika sudah login */}
-            <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+            <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+
+            {/* Admin-only routes — hanya Administrator & Manager */}
+            <Route path="/register" element={<AdminRoute><RegisterPage /></AdminRoute>} />
 
             {/* 2FA flow — bagian dari proses login, belum butuh auth penuh */}
             <Route path="/setup-2fa"   element={<Setup2FAPage />} />

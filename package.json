@@ -16,6 +16,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^11.0.0",
+    "@types/xlsx": "^0.0.36",
     "drizzle-kit": "^0.31.10"
   },
   "peerDependencies": {
@@ -35,6 +36,7 @@
     "react-router-dom": "^7.14.1",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
   }
 }

@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { users } from "../db/schema/users";
+import { users, type UserRole } from "../db/schema/users";
 import { sessions } from "../db/schema/sessions";
 import { eq, or, and, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
@@ -123,6 +123,80 @@ export async function verifyTwoFa(token: string, code: string) {
   if (!isValid) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa.");
 }
 
+export async function getSessionRole(token: string): Promise<UserRole | null> {
+  const session = await db.query.sessions.findFirst({
+    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+  });
+  if (!session) return null;
+  const user = await db.query.users.findFirst({ where: eq(users.id, session.userId!) });
+  return (user?.role as UserRole) ?? null;
+}
+
+export async function getAllUsers() {
+  const result = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    nik: users.nik,
+    role: users.role,
+    twoFaSetup: users.twoFaSetup,
+    createdAt: users.createdAt,
+  }).from(users);
+  return result;
+}
+
+export async function createUserByAdmin(data: {
+  name: string;
+  email: string;
+  nik: number;
+  password: string;
+  role: UserRole;
+}) {
+  const existing = await db.query.users.findFirst({
+    where: or(eq(users.nik, data.nik), eq(users.email, data.email)),
+  });
+  if (existing) throw new Error("NIK atau email sudah terdaftar");
+
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+  const twoFaSecret = generateSecret();
+
+  await db.insert(users).values({
+    name: data.name,
+    email: data.email,
+    nik: data.nik,
+    role: data.role,
+    password: hashedPassword,
+    twoFaSecret,
+  });
+}
+
+export async function updateUser(id: number, data: {
+  name?: string;
+  email?: string;
+  nik?: number;
+  password?: string;
+  role?: UserRole;
+}) {
+  const existing = await db.query.users.findFirst({ where: eq(users.id, id) });
+  if (!existing) throw new Error("User tidak ditemukan");
+
+  const updates: Partial<typeof users.$inferInsert> = {};
+  if (data.name)     updates.name  = data.name;
+  if (data.email)    updates.email = data.email;
+  if (data.nik)      updates.nik   = data.nik;
+  if (data.role)     updates.role  = data.role;
+  if (data.password) updates.password = await bcrypt.hash(data.password, 10);
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(users).set(updates).where(eq(users.id, id));
+  }
+}
+
+export async function deleteUser(id: number) {
+  await db.delete(sessions).where(eq(sessions.userId, id));
+  await db.delete(users).where(eq(users.id, id));
+}
+
 export async function logoutUser(token: string) {
   await db.delete(sessions).where(eq(sessions.token, token));
 }
@@ -148,6 +222,7 @@ export async function getCurrentUser(token: string) {
     id: user.id,
     name: user.name,
     email: user.email,
+    role: user.role as UserRole,
     createdAt: user.createdAt,
   };
 }
