@@ -16,6 +16,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 import ManageUsersView from "./ManageUsersView";
 import UploadView from "./UploadView";
+import CombinedDataTable from "./CombinedDataTable";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -382,6 +383,9 @@ export default function DashboardPage() {
               </div>
             </Card>
           </div>
+
+          {/* Combined FFG data table */}
+          <CombinedDataTable />
 
           </>}
 

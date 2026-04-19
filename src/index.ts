@@ -2,10 +2,11 @@ import { Elysia } from "elysia";
 import { healthRoute } from "./routes/health";
 import { usersRoute } from "./routes/users-route";
 import { uploadRoute } from "./routes/upload-route";
+import { dataRoute } from "./routes/data-route";
 // @ts-ignore — Bun HTML import
 import index from "../index.html";
 
-const api = new Elysia().use(healthRoute).use(usersRoute).use(uploadRoute);
+const api = new Elysia().use(healthRoute).use(usersRoute).use(uploadRoute).use(dataRoute);
 
 const port = Number(Bun.env.PORT ?? 3000);
 

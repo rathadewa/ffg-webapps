@@ -81,6 +81,13 @@ function dateStr(row: CellVal[], idx: number): string | null {
   return null;
 }
 
+function dateVal(row: CellVal[], idx: number): Date | null {
+  const s = dateStr(row, idx);
+  if (!s) return null;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 /* ── Parse workbook → rows ──────────────────────────────── */
 function parseRows(buffer: ArrayBuffer): CellVal[][] {
   const wb  = XLSX.read(buffer, { type: "array", cellDates: true });
@@ -102,7 +109,7 @@ export async function importIndihome(buffer: ArrayBuffer): Promise<{ inserted: n
     const sto      = str(row, colIdx("E"));
     const external = str(row, colIdx("K"));
     const speedy   = str(row, colIdx("N"));
-    const lastUpdate = dateStr(row, colIdx("R"));
+    const lastUpdate = dateVal(row, colIdx("R"));
     const orderId  = str(row, colIdx("U"));
 
     // skip completely empty rows
@@ -130,7 +137,7 @@ export async function importIndibiz(buffer: ArrayBuffer): Promise<{ inserted: nu
     const external = str(row, colIdx("J"));
     const speedy   = str(row, colIdx("K"));
     const pots     = str(row, colIdx("L"));
-    const lastUpdate = dateStr(row, colIdx("N"));
+    const lastUpdate = dateVal(row, colIdx("N"));
 
     if (!sto && !external && !speedy && !orderId) { skipped++; continue; }
 
