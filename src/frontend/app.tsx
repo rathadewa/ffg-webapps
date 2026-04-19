@@ -78,7 +78,9 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("theme") as "dark" | "light") || "dark";
+    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (saved) return saved;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
   const [isLoggedIn, setLoggedIn] = useState(() => isSessionValid());
