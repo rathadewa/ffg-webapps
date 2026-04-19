@@ -35,12 +35,25 @@ export default function Verify2FAPage() {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (digits.join("").length < 6) { setError("Masukkan 6 digit kode dari Google Authenticator."); return; }
+    const code = digits.join("");
+    if (code.length < 6) { setError("Masukkan 6 digit kode dari Google Authenticator."); return; }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setLoading(false);
-    setLoggedIn(true);
-    navigate("/dashboard");
+    try {
+      const token = localStorage.getItem("session_token");
+      const res = await fetch("/api/users/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code }),
+      });
+      const json = await res.json() as { data?: string; error?: string };
+      if (!res.ok) { setError(json.error ?? "Kode OTP tidak valid."); return; }
+      setLoggedIn(true);
+      navigate("/dashboard");
+    } catch {
+      setError("Tidak dapat terhubung ke server.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
