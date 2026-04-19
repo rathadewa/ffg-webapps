@@ -68,6 +68,26 @@
 }
 
 /* ══════════════════════════════════════════════════════════
+   THEME TRANSITION (View Transitions API)
+══════════════════════════════════════════════════════════ */
+::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  animation: vt-circle-in 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes vt-circle-in {
+  from { clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  to   { clip-path: circle(var(--vt-r, 150%) at var(--vt-x, 50%) var(--vt-y, 50%)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════════════
    RESET
 ══════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { registerUser, loginUser, getCurrentUser, logoutUser, markTwoFaSetup, getTwoFaSecret } from "../services/user-service";
+import { registerUser, loginUser, getCurrentUser, logoutUser, markTwoFaSetup, getTwoFaSecret, verifyTwoFa } from "../services/user-service";
 
 export const usersRoute = new Elysia()
   .post(
@@ -54,18 +54,30 @@ export const usersRoute = new Elysia()
       return { error: (error as Error).message };
     }
   })
-  .post("/api/users/2fa-setup", async ({ headers, set }) => {
+  .post("/api/users/2fa-setup", async ({ body, headers, set }) => {
     try {
       const authorization = headers["authorization"] ?? "";
       const token = authorization.split(" ")[1];
       if (!token) { set.status = 401; return { error: "unauthorised" }; }
-      await markTwoFaSetup(token);
+      await markTwoFaSetup(token, body.code);
       return { data: "OK" };
     } catch (error) {
       set.status = 401;
       return { error: (error as Error).message };
     }
-  })
+  }, { body: t.Object({ code: t.String() }) })
+  .post("/api/users/verify-2fa", async ({ body, headers, set }) => {
+    try {
+      const authorization = headers["authorization"] ?? "";
+      const token = authorization.split(" ")[1];
+      if (!token) { set.status = 401; return { error: "unauthorised" }; }
+      await verifyTwoFa(token, body.code);
+      return { data: "OK" };
+    } catch (error) {
+      set.status = 401;
+      return { error: (error as Error).message };
+    }
+  }, { body: t.Object({ code: t.String() }) })
   .post("/api/users/logout", async ({ headers, set }) => {
     const authorization = headers["authorization"] ?? "";
     const token = authorization.split(" ")[1];

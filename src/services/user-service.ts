@@ -4,7 +4,15 @@ import { sessions } from "../db/schema/sessions";
 import { eq, or, and, gt } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
-import { generateSecret } from "otplib";
+import { generateSecret, verifySync, NobleCryptoPlugin, ScureBase32Plugin } from "otplib";
+
+const cryptoPlugin = new NobleCryptoPlugin();
+const base32Plugin = new ScureBase32Plugin();
+
+function checkOTP(code: string, secret: string): boolean {
+  const result = verifySync({ token: code, secret, crypto: cryptoPlugin, base32: base32Plugin });
+  return result.valid;
+}
 
 export async function registerUser(data: {
   name: string;
@@ -46,12 +54,12 @@ export async function loginUser(data: {
   });
 
   if (!user) {
-    throw new Error("Email atau NIK salah");
+    throw new Error("Email, NIK atau password salah");
   }
 
   const isValid = await bcrypt.compare(data.password, user.password);
   if (!isValid) {
-    throw new Error("Email atau NIK salah");
+    throw new Error("Email, NIK atau password salah");
   }
 
   const token = uuidv4();
@@ -87,12 +95,32 @@ export async function getTwoFaSecret(token: string) {
   return { secret, nik: user.nik };
 }
 
-export async function markTwoFaSetup(token: string) {
+export async function markTwoFaSetup(token: string, code: string) {
   const session = await db.query.sessions.findFirst({
     where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
   });
   if (!session) throw new Error("unauthorised");
-  await db.update(users).set({ twoFaSetup: true }).where(eq(users.id, session.userId!));
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, session.userId!) });
+  if (!user?.twoFaSecret) throw new Error("unauthorised");
+
+  const isValid = checkOTP(code, user.twoFaSecret);
+  if (!isValid) throw new Error("Kode OTP tidak valid. Pastikan waktu perangkat Anda sinkron.");
+
+  await db.update(users).set({ twoFaSetup: true }).where(eq(users.id, user.id));
+}
+
+export async function verifyTwoFa(token: string, code: string) {
+  const session = await db.query.sessions.findFirst({
+    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+  });
+  if (!session) throw new Error("unauthorised");
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, session.userId!) });
+  if (!user?.twoFaSecret) throw new Error("unauthorised");
+
+  const isValid = checkOTP(code, user.twoFaSecret);
+  if (!isValid) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa.");
 }
 
 export async function logoutUser(token: string) {
