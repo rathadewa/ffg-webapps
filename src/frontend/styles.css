@@ -642,12 +642,12 @@ img { display: block; max-width: 100%; }
 
 .content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* prevent content from touching scrollbar */
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }

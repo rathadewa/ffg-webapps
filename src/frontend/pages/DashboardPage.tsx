@@ -282,54 +282,7 @@ export default function DashboardPage() {
             {STATS.map((s) => <StatCard key={s.label} {...s} />)}
           </div>
 
-          {/* Row 1: Area chart (wide) + Pie */}
-          <div className="chart-grid">
-            <Card>
-              <CardHead title="Aktivitas 7 Hari Terakhir" subtitle="Registrasi & pengguna aktif" />
-              <div style={{ padding: "20px 20px 12px" }}>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={WEEKLY} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
-                    <defs>
-                      <linearGradient id="gReg" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gAktif" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#34d399" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(59,130,246,0.07)" />
-                    <XAxis dataKey="day"  tick={axisProps} axisLine={false} tickLine={false} />
-                    <YAxis              tick={axisProps} axisLine={false} tickLine={false} />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Area type="monotone" dataKey="registrasi" name="Registrasi" stroke="#3b82f6" strokeWidth={2} fill="url(#gReg)"   dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                    <Area type="monotone" dataKey="aktif"      name="Aktif"      stroke="#34d399" strokeWidth={2} fill="url(#gAktif)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card>
-              <CardHead title="Status Pengguna" />
-              <div style={{ padding: 16 }}>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={STATUS_PIE} cx="50%" cy="43%" innerRadius={52} outerRadius={78} paddingAngle={3} dataKey="value">
-                      {STATUS_PIE.map((e, i) => <Cell key={i} fill={e.color} strokeWidth={0} />)}
-                    </Pie>
-                    <Tooltip content={<ChartTooltip />} />
-                    <Legend
-                      iconType="circle"
-                      iconSize={7}
-                      wrapperStyle={{ fontSize: 12 }}
-                      formatter={(v) => <span style={{ color: "var(--fg-dim)" }}>{v}</span>}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-          </div>
+          <CombinedDataTable />
 
           {/* Row 2: Bar chart + Table (wide) */}
           <div className="chart-grid chart-grid-rev">
@@ -383,9 +336,6 @@ export default function DashboardPage() {
               </div>
             </Card>
           </div>
-
-          {/* Combined FFG data table */}
-          <CombinedDataTable />
 
           </>}
 
