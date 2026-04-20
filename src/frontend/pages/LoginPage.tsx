@@ -47,6 +47,14 @@ export default function LoginPage() {
       {/* ── Decorative background ray ── */}
       <div className="login-ray" aria-hidden="true" />
 
+      {/* ── Orbital rings ── */}
+      <div className="login-orbit" aria-hidden="true">
+        <div className="lo-ring lo-ring-1"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-2"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-3"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-4" />
+      </div>
+
       <ThemeToggle />
 
       <div className="auth-card">
