@@ -72,6 +72,13 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="page-auth" style={{ backgroundImage: "radial-gradient(ellipse 90% 55% at 50% -5%, rgba(52,211,153,0.15) 0%, transparent 65%)" }}>
+        <div className="login-ray" aria-hidden="true" />
+        <div className="login-orbit" aria-hidden="true">
+          <div className="lo-ring lo-ring-1"><span className="lo-dot" /></div>
+          <div className="lo-ring lo-ring-2"><span className="lo-dot" /></div>
+          <div className="lo-ring lo-ring-3"><span className="lo-dot" /></div>
+          <div className="lo-ring lo-ring-4" />
+        </div>
         <div className="auth-card" style={{ textAlign: "center" }}>
           <div className="auth-icon" style={{ background: "rgba(52,211,153,0.1)", borderColor: "rgba(52,211,153,0.2)", color: "var(--ok)" }}>
             <CheckCircle size={28} />
@@ -85,6 +92,13 @@ export default function RegisterPage() {
 
   return (
     <div className="page-auth">
+      <div className="login-ray" aria-hidden="true" />
+      <div className="login-orbit" aria-hidden="true">
+        <div className="lo-ring lo-ring-1"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-2"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-3"><span className="lo-dot" /></div>
+        <div className="lo-ring lo-ring-4" />
+      </div>
       <ThemeToggle />
 
       <div className="auth-card">
