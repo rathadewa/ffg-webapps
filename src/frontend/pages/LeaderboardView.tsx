@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trophy, Medal, Star, Flame, TrendingUp, Ticket, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, Ticket, ChevronLeft, ChevronRight, Copy, Check } from "lucide-react";
 
 /* ── Dummy Data ─────────────────────────────────────────── */
 const LEADERBOARD = [
@@ -26,72 +26,80 @@ const LEADERBOARD = [
 ];
 
 const PAGE_SIZE = 10;
+const FILTERS   = ["All Time", "Daily", "Weekly", "Monthly"];
 
-/* ── Medal config ───────────────────────────────────────── */
-const MEDALS = [
-  {
-    rank: 1,
-    color:  "#f59e0b",
-    glow:   "rgba(245,158,11,0.45)",
-    bg:     "linear-gradient(145deg,#78350f 0%,#92400e 40%,#b45309 100%)",
-    ring:   "#f59e0b",
-    label:  "GOLD",
-    size:   "lb-podium-1",
-    height: "180px",
-  },
-  {
-    rank: 2,
-    color:  "#94a3b8",
-    glow:   "rgba(148,163,184,0.35)",
-    bg:     "linear-gradient(145deg,#1e293b 0%,#334155 40%,#475569 100%)",
-    ring:   "#94a3b8",
-    label:  "SILVER",
-    size:   "lb-podium-2",
-    height: "140px",
-  },
-  {
-    rank: 3,
-    color:  "#f97316",
-    glow:   "rgba(249,115,22,0.35)",
-    bg:     "linear-gradient(145deg,#431407 0%,#7c2d12 40%,#9a3412 100%)",
-    ring:   "#f97316",
-    label:  "BRONZE",
-    size:   "lb-podium-3",
-    height: "110px",
-  },
-];
+const RANK_CFG = {
+  1: { color: "#f59e0b", avatarBg: "linear-gradient(135deg,#78350f,#b45309)" },
+  2: { color: "#94a3b8", avatarBg: "linear-gradient(135deg,#1e293b,#475569)" },
+  3: { color: "#f97316", avatarBg: "linear-gradient(135deg,#431407,#9a3412)" },
+} as const;
 
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
-
+function toHandle(name: string) {
+  return "@" + name.toLowerCase().replace(/\s+/g, "_");
+}
 function fmtScore(n: number) {
   return n.toLocaleString("id-ID");
 }
+function fmtTiket(n: number) {
+  return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
+}
 
-/* ── Podium card ────────────────────────────────────────── */
-function PodiumCard({ data, cfg }: { data: typeof LEADERBOARD[0]; cfg: typeof MEDALS[0] }) {
-  const isFirst = cfg.rank === 1;
+/* ── Top-3 card ─────────────────────────────────────────── */
+function TopCard({ data, featured }: { data: typeof LEADERBOARD[0]; featured: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const cfg      = RANK_CFG[data.rank as 1 | 2 | 3];
+  const idString = `FFG-${String(data.rank).padStart(3, "0")}···${data.score}pts`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(idString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className={`lb-podium-card ${cfg.size}`} style={{ "--medal-ring": cfg.ring, "--medal-glow": cfg.glow } as React.CSSProperties}>
-      {isFirst && <div className="lb-crown">👑</div>}
-      <div className="lb-avatar-wrap" style={{ borderColor: cfg.ring, boxShadow: `0 0 20px ${cfg.glow}, 0 0 40px ${cfg.glow}` }}>
-        <div className="lb-avatar" style={{ background: cfg.bg, color: cfg.color }}>
+    <div className={`lb-card${featured ? " featured" : ""}`}>
+      {/* avatar + name */}
+      <div className="lb-card-top">
+        <div className="lb-card-avatar" style={{ background: cfg.avatarBg, color: cfg.color }}>
           {initials(data.name)}
+          <span className="lb-card-rank-badge" style={{ background: cfg.color }}>
+            #{data.rank}
+          </span>
+        </div>
+        <div className="lb-card-info">
+          <div className="lb-card-name">{data.name}</div>
+          <div className="lb-card-handle">{toHandle(data.name)}</div>
         </div>
       </div>
-      <div className="lb-medal-badge" style={{ background: cfg.color, color: "#000" }}>
-        {cfg.rank === 1 ? <Trophy size={10} /> : <Medal size={10} />}
-        {cfg.label}
+
+      {/* stats */}
+      <div className="lb-card-stats">
+        <div className="lb-stat-col">
+          <div className="lb-stat-label">Tiket</div>
+          <div className="lb-stat-value">{data.tiket}</div>
+        </div>
+        <div className="lb-stat-col">
+          <div className="lb-stat-label">Score</div>
+          <div className="lb-stat-value" style={{ color: cfg.color }}>{fmtScore(data.score)}</div>
+        </div>
+        <div className="lb-stat-col">
+          <div className="lb-stat-label">Growth</div>
+          <div className="lb-stat-value" style={{ color: "var(--ok)" }}>
+            +{(data.rank === 1 ? 12.4 : data.rank === 2 ? 9.8 : 7.2).toFixed(1)}%
+          </div>
+        </div>
       </div>
-      <div className="lb-podium-name">{data.name}</div>
-      <div className="lb-podium-score" style={{ color: cfg.color }}>{fmtScore(data.score)}</div>
-      <div className="lb-podium-tickets">
-        <Ticket size={11} />
-        {data.tiket} tiket
-      </div>
-      <div className="lb-podium-base" style={{ height: cfg.height, background: cfg.bg, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 20px ${cfg.glow}` }}>
-        <span className="lb-podium-rank" style={{ color: cfg.color }}>#{cfg.rank}</span>
+
+      {/* footer */}
+      <div className="lb-card-footer">
+        <span className="lb-card-id">{idString}</span>
+        <button className="lb-copy-btn" onClick={handleCopy}>
+          {copied ? <Check size={11} /> : <Copy size={11} />}
+          {copied ? "Tersalin" : "Salin"}
+        </button>
       </div>
     </div>
   );
@@ -99,7 +107,8 @@ function PodiumCard({ data, cfg }: { data: typeof LEADERBOARD[0]; cfg: typeof ME
 
 /* ── Main component ─────────────────────────────────────── */
 export default function LeaderboardView() {
-  const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState("All Time");
+  const [page,   setPage]   = useState(1);
 
   const top3 = LEADERBOARD.slice(0, 3);
   const rest  = LEADERBOARD.slice(3);
@@ -107,42 +116,41 @@ export default function LeaderboardView() {
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const paged      = rest.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  /* reorder podium: 2nd, 1st, 3rd */
-  const podiumOrder = [top3[1]!, top3[0]!, top3[2]!];
-  const podiumCfg   = [MEDALS[1]!, MEDALS[0]!, MEDALS[2]!];
+  /* order: 2nd · 1st · 3rd */
+  const cardOrder = [top3[1]!, top3[0]!, top3[2]!];
 
   return (
     <div className="lb-wrap">
 
       {/* Header */}
-      <div className="lb-header">
-        <div className="lb-header-icon"><Flame size={22} /></div>
-        <div>
-          <h2 className="lb-title">Leaderboard</h2>
-          <p className="lb-subtitle">Ranking agen berdasarkan score tertinggi bulan ini</p>
-        </div>
-        <div className="lb-header-badge">
-          <Star size={12} />
-          Live Ranking
-        </div>
-      </div>
-
-      {/* Podium */}
-      <div className="lb-podium-stage">
-        <div className="lb-podium-glow" />
-        <div className="lb-podium-row">
-          {podiumOrder.map((d, i) => (
-            <PodiumCard key={d.rank} data={d} cfg={podiumCfg[i]!} />
+      <div className="lb-top-header">
+        <h2 className="lb-title">Leaderboard</h2>
+        <div className="lb-filter-tabs">
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              className={`lb-filter-tab${filter === f ? " active" : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Rest of the table */}
+      {/* Top 3 cards */}
+      <div className="lb-top3-grid">
+        {cardOrder.map((d) => (
+          <TopCard key={d.rank} data={d} featured={d.rank === 1} />
+        ))}
+      </div>
+
+      {/* Table ranks 4+ */}
       <div className="lb-table-wrap">
         <div className="lb-table-head">
           <span>Rank</span>
           <span>Nama</span>
-          <span>Total Tiket</span>
+          <span>Tiket</span>
           <span>Score</span>
           <span>Trend</span>
         </div>
@@ -152,11 +160,14 @@ export default function LeaderboardView() {
             <span className="lb-rank-num">#{row.rank}</span>
             <span className="lb-row-name">
               <div className="lb-row-avatar">{initials(row.name)}</div>
-              {row.name}
+              <div>
+                <div>{row.name}</div>
+                <div className="lb-row-handle">{toHandle(row.name)}</div>
+              </div>
             </span>
             <span className="lb-row-tickets">
               <Ticket size={12} />
-              {row.tiket}
+              {fmtTiket(row.tiket)}
             </span>
             <span className="lb-row-score">{fmtScore(row.score)}</span>
             <span className="lb-row-trend">
@@ -166,40 +177,38 @@ export default function LeaderboardView() {
         ))}
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="lb-pagination">
-            <span className="lb-pg-label">
-              Peringkat {(page - 1) * PAGE_SIZE + 4}–{Math.min(page * PAGE_SIZE + 3, LEADERBOARD.length)} dari {LEADERBOARD.length}
-            </span>
-            <div className="lb-pg-controls">
+        <div className="lb-pagination">
+          <span className="lb-pg-label">
+            Peringkat {(page - 1) * PAGE_SIZE + 4}–{Math.min(page * PAGE_SIZE + 3, LEADERBOARD.length)} dari {LEADERBOARD.length}
+          </span>
+          <div className="lb-pg-controls">
+            <button
+              className="pg-btn"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              aria-label="Halaman sebelumnya"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
-                className="pg-btn"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                aria-label="Halaman sebelumnya"
+                key={p}
+                className={`pg-btn${page === p ? " active" : ""}`}
+                onClick={() => setPage(p)}
               >
-                <ChevronLeft size={14} />
+                {p}
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  className={`pg-btn${page === p ? " active" : ""}`}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                className="pg-btn"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                aria-label="Halaman berikutnya"
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
+            ))}
+            <button
+              className="pg-btn"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              aria-label="Halaman berikutnya"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
     </div>
