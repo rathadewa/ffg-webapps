@@ -101,9 +101,11 @@ function parseRows(buffer: ArrayBuffer): CellVal[][] {
 ──────────────────────────────────────────────────────────── */
 export async function importIndihome(buffer: ArrayBuffer): Promise<{ inserted: number; skipped: number }> {
   const rows = parseRows(buffer);
-  let inserted = 0, skipped = 0;
+  let skipped = 0;
+  const batch: (typeof ffgIndihome.$inferInsert)[] = [];
 
-  // skip row 0 (header)
+  let noOrder = await nextNoOrder("indihome");
+
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]!;
     const sto      = str(row, colIdx("E"));
@@ -112,15 +114,14 @@ export async function importIndihome(buffer: ArrayBuffer): Promise<{ inserted: n
     const lastUpdate = dateVal(row, colIdx("R"));
     const orderId  = str(row, colIdx("U"));
 
-    // skip completely empty rows
     if (!sto && !external && !speedy && !orderId) { skipped++; continue; }
 
-    const noOrder = await nextNoOrder("indihome");
-    await db.insert(ffgIndihome).values({ noOrder, sto, external, speedy, lastUpdate, orderId });
-    inserted++;
+    batch.push({ noOrder: noOrder++, sto, external, speedy, lastUpdate, orderId });
   }
 
-  return { inserted, skipped };
+  if (batch.length > 0) await db.insert(ffgIndihome).values(batch);
+
+  return { inserted: batch.length, skipped };
 }
 
 /* ── Indibiz ────────────────────────────────────────────────
@@ -128,7 +129,10 @@ export async function importIndihome(buffer: ArrayBuffer): Promise<{ inserted: n
 ──────────────────────────────────────────────────────────── */
 export async function importIndibiz(buffer: ArrayBuffer): Promise<{ inserted: number; skipped: number }> {
   const rows = parseRows(buffer);
-  let inserted = 0, skipped = 0;
+  let skipped = 0;
+  const batch: (typeof ffgIndibiz.$inferInsert)[] = [];
+
+  let noOrder = await nextNoOrder("indibiz");
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]!;
@@ -141,10 +145,10 @@ export async function importIndibiz(buffer: ArrayBuffer): Promise<{ inserted: nu
 
     if (!sto && !external && !speedy && !orderId) { skipped++; continue; }
 
-    const noOrder = await nextNoOrder("indibiz");
-    await db.insert(ffgIndibiz).values({ noOrder, sto, external, speedy, lastUpdate, orderId, pots });
-    inserted++;
+    batch.push({ noOrder: noOrder++, sto, external, speedy, lastUpdate, orderId, pots });
   }
 
-  return { inserted, skipped };
+  if (batch.length > 0) await db.insert(ffgIndibiz).values(batch);
+
+  return { inserted: batch.length, skipped };
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { startSession } from "../app";
+import { BASE_PATH } from "../config";
 import ThemeToggle from "../components/ThemeToggle";
 import Logo from "../components/Logo";
 
@@ -26,7 +27,7 @@ export default function LoginPage() {
       : { nik: identifier.trim(), password };
     setLoading(true);
     try {
-      const res  = await fetch("/api/users/login", {
+      const res  = await fetch(`${BASE_PATH}/api/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

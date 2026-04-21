@@ -4,6 +4,7 @@ import { AuthContext } from "../context";
 import { Copy, Check, QrCode, Key } from "lucide-react";
 import QRCode from "qrcode";
 import ThemeToggle from "../components/ThemeToggle";
+import { BASE_PATH } from "../config";
 import Logo from "../components/Logo";
 
 const ISSUER = "FFG Web Apps";
@@ -23,7 +24,7 @@ export default function Setup2FAPage() {
   useEffect(() => {
     const token = localStorage.getItem("session_token");
     if (!token) return;
-    fetch("/api/users/2fa-secret", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${BASE_PATH}/api/users/2fa-secret`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((json: { data?: { secret: string; nik: number } }) => {
         if (!json.data) return;
@@ -71,7 +72,7 @@ export default function Setup2FAPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("session_token");
-      const res = await fetch("/api/users/2fa-setup", {
+      const res = await fetch(`${BASE_PATH}/api/users/2fa-setup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ code }),

@@ -4,8 +4,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/index.ts",
+    "dev": "bun build ./index.html --outdir ./dist && bun --hot src/index.ts",
     "start": "bun src/index.ts",
+    "build": "bun build ./index.html --outdir ./dist",
+    "build:server": "bun build ./index.html --outdir ./dist --public-path /bun/",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },

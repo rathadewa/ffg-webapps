@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Pencil, Trash2, X, UserCheck, UserX } from "lucide-react";
+import { BASE_PATH } from "../config";
 
 type UserRole = "Administrator" | "Manager" | "Agent" | "Teknisi";
 const ROLES: UserRole[] = ["Administrator", "Manager", "Agent", "Teknisi"];
@@ -79,7 +80,7 @@ function UserModal({
       };
       if (form.password) body.password = form.password;
 
-      const url    = mode === "create" ? "/api/users/admin" : `/api/users/${initial!.id}`;
+      const url    = mode === "create" ? `${BASE_PATH}/api/users/admin` : `${BASE_PATH}/api/users/${initial!.id}`;
       const method = mode === "create" ? "POST" : "PUT";
       const res    = await fetch(url, { method, headers: authHeader(), body: JSON.stringify(body) });
       const json   = await res.json() as { data?: string; error?: string };
@@ -161,7 +162,7 @@ function DeleteModal({ user, onClose, onDeleted }: { user: User; onClose: () => 
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      const res  = await fetch(`/api/users/${user.id}`, { method: "DELETE", headers: authHeader() });
+      const res  = await fetch(`${BASE_PATH}/api/users/${user.id}`, { method: "DELETE", headers: authHeader() });
       const json = await res.json() as { data?: string; error?: string };
       if (!res.ok) { setError(json.error ?? "Gagal menghapus."); return; }
       onDeleted();
@@ -208,7 +209,7 @@ export default function ManageUsersView() {
     setLoading(true);
     try {
       const token = localStorage.getItem("session_token") ?? "";
-      const res   = await fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } });
+      const res   = await fetch(`${BASE_PATH}/api/users`, { headers: { Authorization: `Bearer ${token}` } });
       const json  = await res.json() as { data?: User[] };
       if (json.data) setUsers(json.data);
     } catch {

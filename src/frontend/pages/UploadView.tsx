@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { BASE_PATH } from "../config";
 import { Upload, FileSpreadsheet, X, CheckCircle, AlertCircle, Loader } from "lucide-react";
 
 type UploadStatus = "idle" | "uploading" | "success" | "error";
@@ -186,12 +187,12 @@ export default function UploadView() {
       <div className="uploader-grid" style={{ marginTop: 16 }}>
         <FileUploader
           label="Upload FFG IndiHome"
-          endpoint="/api/upload/indihome"
+          endpoint={`${BASE_PATH}/api/upload/indihome`}
           color="blue"
         />
         <FileUploader
           label="Upload FFG IndiBiz"
-          endpoint="/api/upload/indibiz"
+          endpoint={`${BASE_PATH}/api/upload/indibiz`}
           color="purple"
         />
       </div>
