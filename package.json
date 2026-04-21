@@ -1,0 +1,44 @@
+{
+  "name": "ffg-webapps",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun build ./index.html --outdir ./dist && bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "bun build ./index.html --outdir ./dist",
+    "build:server": "bun build ./index.html --outdir ./dist --public-path /bun/",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/bun": "latest",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^11.0.0",
+    "@types/xlsx": "^0.0.36",
+    "drizzle-kit": "^0.31.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "bun-plugin-tailwind": "^0.1.2",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "^1.4.28",
+    "lucide-react": "^1.8.0",
+    "mysql2": "^3.22.1",
+    "otplib": "^13.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.1",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.2.2",
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5"
+  }
+}
