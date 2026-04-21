@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BASE_PATH } from "./config";
 import { ThemeContext, AuthContext } from "./context";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -54,7 +55,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     if (ready) return;
     const token = localStorage.getItem("session_token");
     if (!token) { setReady(true); return; }
-    fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${BASE_PATH}/api/users/current`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((json: { data?: { role: string } }) => {
         if (json.data?.role) {
@@ -105,7 +106,7 @@ function App() {
   return (
     <AuthContext.Provider value={{ isLoggedIn, setLoggedIn: handleSetLoggedIn }}>
       <ThemeContext.Provider value={{ theme, toggleTheme }}>
-        <BrowserRouter>
+        <BrowserRouter basename={BASE_PATH}>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
 

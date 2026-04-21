@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
+import { BASE_PATH } from "../config";
 import Logo from "../components/Logo";
 
 interface FormState {
@@ -53,7 +54,7 @@ export default function RegisterPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setLoading(true);
     try {
-      const res  = await fetch("/api/users", {
+      const res  = await fetch(`${BASE_PATH}/api/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: form.name, email: form.email, nik: Number(form.nik), password: form.password }),

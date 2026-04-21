@@ -7,6 +7,7 @@ import {
   PanelLeftClose, PanelLeftOpen, Menu, X, Upload, Trophy,
 } from "lucide-react";
 import { isAdminOrManager } from "../app";
+import { BASE_PATH } from "../config";
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -151,7 +152,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem("session_token");
     if (!token) return;
-    fetch("/api/users/current", { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${BASE_PATH}/api/users/current`, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.json())
       .then((json: { data?: { name: string; email: string; role: string } }) => {
         if (json.data) {
@@ -167,7 +168,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     const token = localStorage.getItem("session_token");
-    if (token) await fetch("/api/users/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+    if (token) await fetch(`${BASE_PATH}/api/users/logout`, { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     setLoggedIn(false);
     navigate("/login");
   };

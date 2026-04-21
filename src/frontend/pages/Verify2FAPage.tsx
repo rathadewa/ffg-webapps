@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
 import { AuthContext } from "../context";
 import ThemeToggle from "../components/ThemeToggle";
+import { BASE_PATH } from "../config";
 import Logo from "../components/Logo";
 
 export default function Verify2FAPage() {
@@ -40,7 +41,7 @@ export default function Verify2FAPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("session_token");
-      const res = await fetch("/api/users/verify-2fa", {
+      const res = await fetch(`${BASE_PATH}/api/users/verify-2fa`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ code }),

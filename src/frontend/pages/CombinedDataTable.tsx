@@ -3,6 +3,7 @@ import {
   Search, ChevronUp, ChevronDown, ChevronsLeft, ChevronsRight,
   ChevronLeft, ChevronRight, Database, SlidersHorizontal,
 } from "lucide-react";
+import { BASE_PATH } from "../config";
 
 type DataType = "all" | "indihome" | "indibiz";
 type SortDir  = "asc" | "desc";
@@ -120,7 +121,7 @@ export default function CombinedDataTable() {
       if (opts.search) params.set("search", opts.search);
       if (opts.type !== "all") params.set("type", opts.type);
 
-      const res  = await fetch(`/api/data/combined?${params}`, { headers: authHeader() });
+      const res  = await fetch(`${BASE_PATH}/api/data/combined?${params}`, { headers: authHeader() });
       const json = await res.json() as { data?: PageResult; error?: string };
       if (!res.ok) { setError(json.error ?? "Gagal memuat data."); return; }
       setData(json.data ?? null);

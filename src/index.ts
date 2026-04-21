@@ -3,32 +3,29 @@ import { healthRoute } from "./routes/health";
 import { usersRoute } from "./routes/users-route";
 import { uploadRoute } from "./routes/upload-route";
 import { dataRoute } from "./routes/data-route";
-// @ts-ignore — Bun HTML import
-import index from "../index.html";
+import { join } from "path";
 
 const api = new Elysia().use(healthRoute).use(usersRoute).use(uploadRoute).use(dataRoute);
 
 const port = Number(Bun.env.PORT ?? 3000);
+const distDir = join(import.meta.dir, "../dist");
+const indexHtml = Bun.file(join(distDir, "index.html"));
 
 Bun.serve({
   port,
-  routes: {
-    // API routes — handled by ElysiaJS
-    "/api/*":   (req: Request) => api.handle(req),
-    "/health":  (req: Request) => api.handle(req),
+  async fetch(req: Request) {
+    const { pathname } = new URL(req.url);
 
-    // Frontend routes — served as SPA
-    "/":            index,
-    "/login":       index,
-    "/register":    index,
-    "/verify-otp":  index,
-    "/verify-2fa":  index,
-    "/setup-2fa":   index,
-    "/dashboard":   index,
-  },
-  development: {
-    hmr: true,
-    console: true,
+    if (pathname.startsWith("/api/") || pathname === "/health") {
+      return api.handle(req);
+    }
+
+    const staticFile = Bun.file(join(distDir, pathname));
+    if (await staticFile.exists()) {
+      return new Response(staticFile);
+    }
+
+    return new Response(indexHtml);
   },
 });
 
