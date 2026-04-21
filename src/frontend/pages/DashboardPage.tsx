@@ -2,11 +2,11 @@ import { useState, useContext, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AuthContext } from "../context";
 import {
-  LayoutDashboard, Users, ShieldCheck, BarChart2, Settings,
-  UserPlus, Activity, Zap, LogOut, TrendingUp, TrendingDown,
-  PanelLeftClose, PanelLeftOpen, Menu, X, Upload, Trophy,
+  LayoutDashboard, Users, UserPlus, Activity, Zap, LogOut,
+  TrendingUp, TrendingDown, PanelLeftClose, PanelLeftOpen,
+  Menu, X, Upload, Trophy, ClipboardList, History, Layers,
+  Inbox, UserCog,
 } from "lucide-react";
-import { isAdminOrManager } from "../app";
 import { BASE_PATH } from "../config";
 import {
   AreaChart, Area, BarChart, Bar,
@@ -58,16 +58,18 @@ const STATS = [
   { label: "Registrasi Baru", value: "47",    change: "+18%", up: true,  Icon: UserPlus },
   { label: "Sesi Aktif",      value: "128",   change: "-3%",  up: false, Icon: Zap },
 ];
-const NAV = [
-  { id: "dashboard",   Icon: LayoutDashboard, label: "Dashboard",    adminOnly: false },
-  { id: "leaderboard", Icon: Trophy,          label: "Leaderboard",  adminOnly: false },
-  { id: "users",       Icon: Users,           label: "Pengguna",     adminOnly: true  },
-  { id: "upload",      Icon: Upload,          label: "Upload Data",  adminOnly: true  },
-  { id: "security",    Icon: ShieldCheck,     label: "Keamanan",     adminOnly: false },
-  { id: "reports",     Icon: BarChart2,       label: "Laporan",      adminOnly: false },
+const NAV_ADMIN = [
+  { id: "dashboard", Icon: LayoutDashboard, label: "Dashboard"    },
+  { id: "users",     Icon: Users,           label: "Manage Users" },
 ];
-const NAV_BOTTOM = [
-  { id: "settings", Icon: Settings, label: "Pengaturan" },
+const NAV_FG = [
+  { id: "upload",          Icon: Upload,        label: "Upload Data"               },
+  { id: "leaderboard",     Icon: Trophy,        label: "Leaderboard"               },
+  { id: "pengukuran-psb",  Icon: ClipboardList, label: "Pengukuran Order PSB"      },
+  { id: "history-ticket",  Icon: History,       label: "History Pengerjaan Ticket" },
+  { id: "pool-tiket",      Icon: Layers,        label: "Pool Tiket Kendala Logik"  },
+  { id: "inbox-tiket",     Icon: Inbox,         label: "Inbox Tiket"               },
+  { id: "pengaturan-user", Icon: UserCog,       label: "Pengaturan User"           },
 ];
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   active:   { label: "Aktif",    cls: "badge badge-success" },
@@ -147,7 +149,7 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed]         = useState(false);
   const [mobileOpen, setMobileOpen]       = useState(false);
   const [currentUser, setCurrentUser]     = useState<{ name: string; email: string; role: string } | null>(null);
-  const [canManageUsers, setCanManageUsers] = useState(isAdminOrManager());
+  const [isAdministrator, setIsAdministrator] = useState(localStorage.getItem("user_role") === "Administrator");
 
   useEffect(() => {
     const token = localStorage.getItem("session_token");
@@ -158,7 +160,7 @@ export default function DashboardPage() {
         if (json.data) {
           setCurrentUser(json.data);
           localStorage.setItem("user_role", json.data.role);
-          setCanManageUsers(["Administrator", "Manager"].includes(json.data.role));
+          setIsAdministrator(json.data.role === "Administrator");
         }
       })
       .catch(() => {});
@@ -199,8 +201,24 @@ export default function DashboardPage() {
         </div>
 
         <nav className="sidebar-nav">
-          {!collapsed && <p className="nav-section-label">Menu</p>}
-          {NAV.filter((n) => !n.adminOnly || canManageUsers).map(({ id, Icon, label }) => (
+          {isAdministrator && (
+            <>
+              {!collapsed && <p className="nav-section-label">Administrator</p>}
+              {NAV_ADMIN.map(({ id, Icon, label }) => (
+                <button
+                  key={id}
+                  className={`nav-link${activeNav === id ? " active" : ""}`}
+                  onClick={() => { setActiveNav(id); setMobileOpen(false); }}
+                  title={collapsed ? label : undefined}
+                >
+                  <Icon size={16} />
+                  {!collapsed && <span>{label}</span>}
+                </button>
+              ))}
+            </>
+          )}
+          {!collapsed && <p className="nav-section-label">Fulfillment Guarantee</p>}
+          {NAV_FG.map(({ id, Icon, label }) => (
             <button
               key={id}
               className={`nav-link${activeNav === id ? " active" : ""}`}
@@ -214,18 +232,6 @@ export default function DashboardPage() {
         </nav>
 
         <div className="sidebar-footer">
-          {!collapsed && <p className="nav-section-label">Lainnya</p>}
-          {NAV_BOTTOM.map(({ id, Icon, label }) => (
-            <button
-              key={id}
-              className={`nav-link${activeNav === id ? " active" : ""}`}
-              onClick={() => { setActiveNav(id); setMobileOpen(false); }}
-              title={collapsed ? label : undefined}
-            >
-              <Icon size={16} />
-              {!collapsed && <span>{label}</span>}
-            </button>
-          ))}
 
           {!collapsed && currentUser && (
             <div className="sidebar-user">
@@ -258,7 +264,7 @@ export default function DashboardPage() {
             </button>
             <div>
               <div className="topbar-title">
-                {NAV.find((n) => n.id === activeNav)?.label ?? NAV_BOTTOM.find((n) => n.id === activeNav)?.label ?? "Dashboard"}
+                {[...NAV_ADMIN, ...NAV_FG].find((n) => n.id === activeNav)?.label ?? "Dashboard"}
               </div>
               <p className="topbar-sub">
                 Selamat datang, <span>{currentUser?.name ?? "—"}</span>
@@ -277,9 +283,16 @@ export default function DashboardPage() {
           {activeNav === "users"       && <ManageUsersView />}
           {activeNav === "upload"      && <UploadView />}
           {activeNav === "leaderboard" && <LeaderboardView />}
+          {["pengukuran-psb", "history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav) && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
+              Halaman ini sedang dalam pengembangan.
+            </div>
+          )}
 
           {/* Dashboard content */}
-          {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard" && <>
+          {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard"
+            && !["pengukuran-psb", "history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav)
+            && <>
 
           {/* Stats */}
           <div className="stat-grid">
