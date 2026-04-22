@@ -20,6 +20,7 @@ import UploadView from "./UploadView";
 import CombinedDataTable from "./CombinedDataTable";
 import LeaderboardView from "./LeaderboardView";
 import PengukuranOrderPSBView from "./PengukuranOrderPSBView";
+import PengaturanUserView from "./PengaturanUserView";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -281,11 +282,12 @@ export default function DashboardPage() {
         <main className="content">
 
           {/* Views */}
-          {activeNav === "users"          && <ManageUsersView />}
-          {activeNav === "upload"         && <UploadView />}
-          {activeNav === "leaderboard"    && <LeaderboardView />}
-          {activeNav === "pengukuran-psb" && <PengukuranOrderPSBView />}
-          {["history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav) && (
+          {activeNav === "users"            && <ManageUsersView />}
+          {activeNav === "upload"           && <UploadView />}
+          {activeNav === "leaderboard"      && <LeaderboardView />}
+          {activeNav === "pengukuran-psb"   && <PengukuranOrderPSBView />}
+          {activeNav === "pengaturan-user"  && <PengaturanUserView />}
+          {["history-ticket", "pool-tiket", "inbox-tiket"].includes(activeNav) && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
               Halaman ini sedang dalam pengembangan.
             </div>
@@ -293,8 +295,8 @@ export default function DashboardPage() {
 
           {/* Dashboard content */}
           {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard"
-            && activeNav !== "pengukuran-psb"
-            && !["history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav)
+            && activeNav !== "pengukuran-psb" && activeNav !== "pengaturan-user"
+            && !["history-ticket", "pool-tiket", "inbox-tiket"].includes(activeNav)
             && <>
 
           {/* Stats */}
