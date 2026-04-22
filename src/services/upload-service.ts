@@ -98,13 +98,16 @@ function normalizeDate(v: CellVal, source: "indihome" | "indibiz"): string | nul
    MySQL limits parameters per query (~65 535).
    At 7 cols/row → max ~9 000 rows; use 1 000 to stay safe.
 ──────────────────────────────────────────────────────────── */
-const CHUNK = 1_000;
+const CHUNK = 500;
 
 async function insertChunked(
   batch: (typeof pengukuranOrderPsb.$inferInsert)[]
 ): Promise<void> {
-  for (let i = 0; i < batch.length; i += CHUNK) {
-    await db.insert(pengukuranOrderPsb).values(batch.slice(i, i + CHUNK));
+  const total = batch.length;
+  for (let i = 0; i < total; i += CHUNK) {
+    const chunk = batch.slice(i, i + CHUNK);
+    console.log(`[insert] chunk ${Math.floor(i/CHUNK)+1}/${Math.ceil(total/CHUNK)} (${chunk.length} rows)`);
+    await db.insert(pengukuranOrderPsb).values(chunk);
   }
 }
 
