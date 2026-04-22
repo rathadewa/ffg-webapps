@@ -71,8 +71,8 @@ function normalizeDate(v: CellVal, source: "indihome" | "indibiz"): string | nul
     const s = v.trim();
 
     if (source === "indihome") {
-      // yyyy-mm-dd
-      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      // yyyy-mm-dd or yyyy-mm-dd HH:MM:SS
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
       if (m) return `${m[3]}-${m[2]}-${m[1]}`;
     }
 
