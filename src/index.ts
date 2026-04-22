@@ -3,9 +3,10 @@ import { healthRoute } from "./routes/health";
 import { usersRoute } from "./routes/users-route";
 import { uploadRoute } from "./routes/upload-route";
 import { dataRoute } from "./routes/data-route";
+import { userFfgRoute } from "./routes/user-ffg-route";
 import { join } from "path";
 
-const api = new Elysia().use(healthRoute).use(usersRoute).use(uploadRoute).use(dataRoute);
+const api = new Elysia().use(healthRoute).use(usersRoute).use(uploadRoute).use(dataRoute).use(userFfgRoute);
 
 const port = Number(Bun.env.PORT ?? 3000);
 const distDir = join(import.meta.dir, "../dist");
