@@ -280,10 +280,11 @@ export default function DashboardPage() {
         <main className="content">
 
           {/* Views */}
-          {activeNav === "users"       && <ManageUsersView />}
-          {activeNav === "upload"      && <UploadView />}
-          {activeNav === "leaderboard" && <LeaderboardView />}
-          {["pengukuran-psb", "history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav) && (
+          {activeNav === "users"          && <ManageUsersView />}
+          {activeNav === "upload"         && <UploadView />}
+          {activeNav === "leaderboard"    && <LeaderboardView />}
+          {activeNav === "pengukuran-psb" && <CombinedDataTable />}
+          {["history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav) && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
               Halaman ini sedang dalam pengembangan.
             </div>
@@ -291,15 +292,14 @@ export default function DashboardPage() {
 
           {/* Dashboard content */}
           {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard"
-            && !["pengukuran-psb", "history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav)
+            && activeNav !== "pengukuran-psb"
+            && !["history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav)
             && <>
 
           {/* Stats */}
           <div className="stat-grid">
             {STATS.map((s) => <StatCard key={s.label} {...s} />)}
           </div>
-
-          <CombinedDataTable />
 
           {/* Row 2: Bar chart + Table (wide) */}
           <div className="chart-grid chart-grid-rev">

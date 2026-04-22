@@ -8,21 +8,23 @@ import { sql } from "drizzle-orm";
    e.g.  : ORD202604220001
 ──────────────────────────────────────────────────────────── */
 async function nextOrderIds(count: number): Promise<string[]> {
-  const now  = new Date();
-  const y    = now.getFullYear();
-  const m    = String(now.getMonth() + 1).padStart(2, "0");
-  const d    = String(now.getDate()).padStart(2, "0");
+  const now    = new Date();
+  const y      = now.getFullYear();
+  const m      = String(now.getMonth() + 1).padStart(2, "0");
+  const d      = String(now.getDate()).padStart(2, "0");
   const prefix = `ORD${y}${m}${d}`;
 
-  const rows = await db
-    .select({ max: sql<string>`MAX(order_id)` })
-    .from(pengukuranOrderPsb)
-    .where(sql`order_id LIKE ${prefix + "%"}`);
+  // CAST to UNSIGNED so MAX is numeric, not lexicographic
+  const result = await db.execute(sql`
+    SELECT MAX(CAST(SUBSTRING(order_id, ${prefix.length + 1}) AS UNSIGNED)) AS max_seq
+    FROM pengukuran_order_psb
+    WHERE order_id LIKE ${prefix + "%"}
+  `);
 
-  const maxId = rows[0]?.max ?? null;
-  let seq = maxId ? parseInt(maxId.slice(-4), 10) + 1 : 1;
+  const maxSeq = Number((result as any)[0]?.[0]?.max_seq ?? 0);
+  let seq = maxSeq + 1;
 
-  return Array.from({ length: count }, () => `${prefix}${String(seq++).padStart(4, "0")}`);
+  return Array.from({ length: count }, () => `${prefix}${String(seq++).padStart(5, "0")}`);
 }
 
 /* ── Cell helpers ───────────────────────────────────────────
@@ -107,7 +109,13 @@ async function insertChunked(
   for (let i = 0; i < total; i += CHUNK) {
     const chunk = batch.slice(i, i + CHUNK);
     console.log(`[insert] chunk ${Math.floor(i/CHUNK)+1}/${Math.ceil(total/CHUNK)} (${chunk.length} rows)`);
-    await db.insert(pengukuranOrderPsb).values(chunk);
+    try {
+      await db.insert(pengukuranOrderPsb).values(chunk);
+    } catch (e: any) {
+      const cause = e?.cause;
+      console.error("[insert] FAILED —", cause?.code, cause?.sqlMessage ?? cause?.message ?? e?.message);
+      throw e;
+    }
   }
 }
 
