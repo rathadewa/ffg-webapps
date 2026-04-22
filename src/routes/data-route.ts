@@ -15,12 +15,16 @@ export const dataRoute = new Elysia()
       if (!role) { set.status = 401; return { error: "unauthorised" }; }
 
       const result = await getCombinedData({
-        page:    Math.max(1, Number(query.page   ?? 1)),
-        limit:   Math.min(100, Math.max(1, Number(query.limit ?? 25))),
-        search:  query.search?.trim() || undefined,
-        type:    (query.type as "indihome" | "indibiz" | "all") || "all",
-        sortBy:  query.sortBy  || "no_order",
-        sortDir: (query.sortDir as "asc" | "desc") || "desc",
+        page:     Math.max(1, Number(query.page  ?? 1)),
+        limit:    Math.min(100, Math.max(1, Number(query.limit ?? 25))),
+        search:   query.search?.trim()   || undefined,
+        type:     (query.type as "indihome" | "indibiz" | "all") || "all",
+        sortBy:   query.sortBy           || "order_id",
+        sortDir:  (query.sortDir as "asc" | "desc") || "desc",
+        status:   query.status?.trim()   || undefined,
+        sto:      query.sto?.trim()      || undefined,
+        dateFrom: query.dateFrom?.trim() || undefined,
+        dateTo:   query.dateTo?.trim()   || undefined,
       });
       return { data: result };
     } catch (error) {
@@ -29,12 +33,16 @@ export const dataRoute = new Elysia()
     }
   }, {
     query: t.Object({
-      page:    t.Optional(t.String()),
-      limit:   t.Optional(t.String()),
-      search:  t.Optional(t.String()),
-      type:    t.Optional(t.String()),
-      sortBy:  t.Optional(t.String()),
-      sortDir: t.Optional(t.String()),
+      page:     t.Optional(t.String()),
+      limit:    t.Optional(t.String()),
+      search:   t.Optional(t.String()),
+      type:     t.Optional(t.String()),
+      sortBy:   t.Optional(t.String()),
+      sortDir:  t.Optional(t.String()),
+      status:   t.Optional(t.String()),
+      sto:      t.Optional(t.String()),
+      dateFrom: t.Optional(t.String()),
+      dateTo:   t.Optional(t.String()),
     }),
   })
   .get("/api/data/stats", async ({ headers, set }) => {
