@@ -253,11 +253,19 @@ export default function CombinedDataTable() {
           {/* Date range */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 11, color: "var(--fg-faint)", whiteSpace: "nowrap" }}>Last Update:</span>
-            <input type="date" value={dateFrom} onChange={(e) => handleDateFrom(e.target.value)}
-              style={{ ...inputStyle, width: 140 }} />
+            <input
+              type="date" value={dateFrom}
+              onChange={(e) => handleDateFrom(e.target.value)}
+              onKeyDown={(e) => e.preventDefault()}
+              style={{ ...inputStyle, width: 140, cursor: "pointer" }}
+            />
             <span style={{ fontSize: 11, color: "var(--fg-faint)" }}>—</span>
-            <input type="date" value={dateTo} onChange={(e) => handleDateTo(e.target.value)}
-              style={{ ...inputStyle, width: 140 }} />
+            <input
+              type="date" value={dateTo}
+              onChange={(e) => handleDateTo(e.target.value)}
+              onKeyDown={(e) => e.preventDefault()}
+              style={{ ...inputStyle, width: 140, cursor: "pointer" }}
+            />
           </div>
 
           {/* Reset button */}
