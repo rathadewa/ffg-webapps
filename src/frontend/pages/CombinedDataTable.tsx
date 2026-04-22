@@ -257,6 +257,7 @@ export default function CombinedDataTable() {
               type="date" value={dateFrom}
               onChange={(e) => handleDateFrom(e.target.value)}
               onKeyDown={(e) => e.preventDefault()}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
               style={{ ...inputStyle, width: 140, cursor: "pointer" }}
             />
             <span style={{ fontSize: 11, color: "var(--fg-faint)" }}>—</span>
@@ -264,6 +265,7 @@ export default function CombinedDataTable() {
               type="date" value={dateTo}
               onChange={(e) => handleDateTo(e.target.value)}
               onKeyDown={(e) => e.preventDefault()}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
               style={{ ...inputStyle, width: 140, cursor: "pointer" }}
             />
           </div>
