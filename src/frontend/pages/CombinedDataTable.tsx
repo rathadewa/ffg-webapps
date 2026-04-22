@@ -16,6 +16,26 @@ interface CombinedRow {
   speedy:      string | null;
   pots:        string | null;
   last_update: string | null;
+  status:      string | null;
+}
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status) return <span style={{ color: "var(--fg-faint)" }}>—</span>;
+  const cfg: Record<string, { bg: string; color: string }> = {
+    "UP":        { bg: "rgba(52,211,153,0.15)", color: "#34d399" },
+    "DOWN":      { bg: "rgba(248,113,113,0.15)", color: "#f87171" },
+    "NOT FOUND": { bg: "rgba(251,191,36,0.15)",  color: "#fbbf24" },
+  };
+  const s = cfg[status] ?? { bg: "rgba(148,163,184,0.15)", color: "#94a3b8" };
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      padding: "2px 8px", borderRadius: 6,
+      fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+    }}>
+      {status}
+    </span>
+  );
 }
 
 interface PageResult {
@@ -239,6 +259,7 @@ export default function CombinedDataTable() {
               <tr>
                 <SortTh col="order_id"    label="Order ID"    {...sortProps} />
                 <SortTh col="source"      label="Tipe"        {...sortProps} />
+                <SortTh col="status"      label="Status"      {...sortProps} />
                 <SortTh col="sto"         label="STO"         {...sortProps} />
                 <SortTh col="external"    label="External"    {...sortProps} />
                 <SortTh col="speedy"      label="Speedy"      {...sortProps} />
@@ -255,6 +276,7 @@ export default function CombinedDataTable() {
                       {row.type}
                     </span>
                   </td>
+                  <td><StatusBadge status={row.status} /></td>
                   <td>{row.sto      ?? EMPTY}</td>
                   <td>{row.external ?? EMPTY}</td>
                   <td>{row.speedy   ?? EMPTY}</td>

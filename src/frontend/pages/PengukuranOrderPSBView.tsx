@@ -3,6 +3,10 @@ import { Database, TrendingUp, TrendingDown, SearchX } from "lucide-react";
 import { BASE_PATH } from "../config";
 import CombinedDataTable from "./CombinedDataTable";
 
+interface Stats {
+  total: number; up: number; down: number; notFound: number;
+}
+
 function StatCard({
   label, value, Icon, iconColor,
 }: {
@@ -23,21 +27,21 @@ function StatCard({
 }
 
 export default function PengukuranOrderPSBView() {
-  const [total, setTotal] = useState<string>("—");
+  const [stats, setStats] = useState<Stats>({ total: 0, up: 0, down: 0, notFound: 0 });
 
   useEffect(() => {
     const token = localStorage.getItem("session_token") ?? "";
-    fetch(`${BASE_PATH}/api/data/combined?page=1&limit=1`, {
+    fetch(`${BASE_PATH}/api/data/stats`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
-      .then((json: { data?: { total: number } }) => {
-        if (json.data?.total != null) {
-          setTotal(json.data.total.toLocaleString("id-ID"));
-        }
+      .then((json: { data?: Stats }) => {
+        if (json.data) setStats(json.data);
       })
       .catch(() => {});
   }, []);
+
+  const fmt = (n: number) => n.toLocaleString("id-ID");
 
   return (
     <>
@@ -49,10 +53,10 @@ export default function PengukuranOrderPSBView() {
       </div>
 
       <div className="stat-grid" style={{ marginTop: 16 }}>
-        <StatCard label="Total Data" value={total}  Icon={Database}     iconColor="#3b82f6" />
-        <StatCard label="UP"         value="—"       Icon={TrendingUp}   iconColor="#34d399" />
-        <StatCard label="DOWN"       value="—"       Icon={TrendingDown} iconColor="#f87171" />
-        <StatCard label="Not Found"  value="—"       Icon={SearchX}      iconColor="#fbbf24" />
+        <StatCard label="Total Data" value={fmt(stats.total)}    Icon={Database}     iconColor="#3b82f6" />
+        <StatCard label="UP"         value={fmt(stats.up)}       Icon={TrendingUp}   iconColor="#34d399" />
+        <StatCard label="DOWN"       value={fmt(stats.down)}     Icon={TrendingDown} iconColor="#f87171" />
+        <StatCard label="Not Found"  value={fmt(stats.notFound)} Icon={SearchX}      iconColor="#fbbf24" />
       </div>
 
       <div style={{ marginTop: 16 }}>

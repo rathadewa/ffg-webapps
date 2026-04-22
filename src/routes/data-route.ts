@@ -1,6 +1,6 @@
 import { Elysia, t } from "elysia";
 import { getSessionRole } from "../services/user-service";
-import { getCombinedData } from "../services/data-service";
+import { getCombinedData, getStatusStats } from "../services/data-service";
 
 function getToken(headers: Record<string, string | undefined>): string {
   return (headers["authorization"] ?? "").split(" ")[1] ?? "";
@@ -36,4 +36,16 @@ export const dataRoute = new Elysia()
       sortBy:  t.Optional(t.String()),
       sortDir: t.Optional(t.String()),
     }),
+  })
+  .get("/api/data/stats", async ({ headers, set }) => {
+    try {
+      const token = getToken(headers);
+      if (!token) { set.status = 401; return { error: "unauthorised" }; }
+      const role = await getSessionRole(token);
+      if (!role) { set.status = 401; return { error: "unauthorised" }; }
+      return { data: await getStatusStats() };
+    } catch (error) {
+      set.status = 500;
+      return { error: (error as Error).message };
+    }
   });

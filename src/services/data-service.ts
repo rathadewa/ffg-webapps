@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 export type DataType = "indihome" | "indibiz" | "all";
 export type SortDir  = "asc" | "desc";
 
-const SORT_WHITELIST = ["order_id", "source", "sto", "external", "speedy", "last_update", "pots"] as const;
+const SORT_WHITELIST = ["order_id", "source", "sto", "external", "speedy", "last_update", "pots", "status"] as const;
 type SortCol = typeof SORT_WHITELIST[number];
 
 function safeSort(col?: string): SortCol {
@@ -19,6 +19,14 @@ export interface CombinedRow {
   speedy:      string | null;
   pots:        string | null;
   last_update: string | null;
+  status:      string | null;
+}
+
+export interface StatusStats {
+  total:    number;
+  up:       number;
+  down:     number;
+  notFound: number;
 }
 
 export interface CombinedResult {
@@ -66,7 +74,7 @@ export async function getCombinedData(opts: {
     SELECT
       p.order_id,
       CASE WHEN p.source = 'indihome' THEN 'IndiHome' ELSE 'IndiBiz' END AS type,
-      p.sto, p.external, p.speedy, p.pots, p.last_update
+      p.sto, p.external, p.speedy, p.pots, p.last_update, p.status
     FROM pengukuran_order_psb p
     WHERE 1=1 ${typeFilter} ${searchFilter}
     ORDER BY ${sql.raw(col)} ${sql.raw(dir)}
@@ -81,5 +89,23 @@ export async function getCombinedData(opts: {
     page,
     limit,
     totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
+}
+
+export async function getStatusStats(): Promise<StatusStats> {
+  const result = await db.execute(sql`
+    SELECT
+      COUNT(*)                                              AS total,
+      SUM(CASE WHEN status = 'UP'        THEN 1 ELSE 0 END) AS up,
+      SUM(CASE WHEN status = 'DOWN'      THEN 1 ELSE 0 END) AS down,
+      SUM(CASE WHEN status = 'NOT FOUND' THEN 1 ELSE 0 END) AS not_found
+    FROM pengukuran_order_psb
+  `);
+  const row = (result as any)[0]?.[0] ?? {};
+  return {
+    total:    Number(row.total    ?? 0),
+    up:       Number(row.up       ?? 0),
+    down:     Number(row.down     ?? 0),
+    notFound: Number(row.not_found ?? 0),
   };
 }
