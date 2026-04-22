@@ -94,6 +94,20 @@ function normalizeDate(v: CellVal, source: "indihome" | "indibiz"): string | nul
   return null;
 }
 
+/* ── Chunked insert ─────────────────────────────────────────
+   MySQL limits parameters per query (~65 535).
+   At 7 cols/row → max ~9 000 rows; use 1 000 to stay safe.
+──────────────────────────────────────────────────────────── */
+const CHUNK = 1_000;
+
+async function insertChunked(
+  batch: (typeof pengukuranOrderPsb.$inferInsert)[]
+): Promise<void> {
+  for (let i = 0; i < batch.length; i += CHUNK) {
+    await db.insert(pengukuranOrderPsb).values(batch.slice(i, i + CHUNK));
+  }
+}
+
 /* ── Parse workbook → rows ──────────────────────────────── */
 function parseRows(buffer: ArrayBuffer): CellVal[][] {
   const wb = XLSX.read(buffer, { type: "array", cellDates: true });
@@ -134,7 +148,7 @@ export async function importIndihome(buffer: ArrayBuffer): Promise<{ inserted: n
     pots:       null,
   }));
 
-  await db.insert(pengukuranOrderPsb).values(batch);
+  await insertChunked(batch);
   return { inserted: batch.length, skipped };
 }
 
@@ -172,6 +186,6 @@ export async function importIndibiz(buffer: ArrayBuffer): Promise<{ inserted: nu
     pots:       r.pots,
   }));
 
-  await db.insert(pengukuranOrderPsb).values(batch);
+  await insertChunked(batch);
   return { inserted: batch.length, skipped };
 }
