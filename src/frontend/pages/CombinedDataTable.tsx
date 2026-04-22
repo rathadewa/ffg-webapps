@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, ChevronUp, ChevronDown, ChevronsLeft, ChevronsRight,
-  ChevronLeft, ChevronRight, Database, SlidersHorizontal, X,
+  ChevronLeft, ChevronRight, Database, X,
 } from "lucide-react";
 import { BASE_PATH } from "../config";
 
-type DataType = "all" | "indihome" | "indibiz";
-type SortDir  = "asc" | "desc";
+type SortDir = "asc" | "desc";
 
 interface CombinedRow {
   order_id:    string;
@@ -30,7 +29,6 @@ interface PageResult {
 interface Filters {
   page:     number;
   search:   string;
-  type:     DataType;
   sortBy:   string;
   sortDir:  SortDir;
   status:   string;
@@ -126,7 +124,6 @@ export default function CombinedDataTable() {
   const [error,   setError]   = useState("");
 
   const [search,   setSearch]   = useState("");
-  const [type,     setType]     = useState<DataType>("all");
   const [sortBy,   setSortBy]   = useState("order_id");
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [page,     setPage]     = useState(1);
@@ -148,9 +145,8 @@ export default function CombinedDataTable() {
         sortBy:  f.sortBy,
         sortDir: f.sortDir,
       });
-      if (f.search)              params.set("search",   f.search);
-      if (f.type !== "all")      params.set("type",     f.type);
-      if (f.status !== "all")    params.set("status",   f.status);
+      if (f.search)           params.set("search",   f.search);
+      if (f.status !== "all") params.set("status",   f.status);
       if (f.sto)                 params.set("sto",      f.sto);
       if (f.dateFrom)            params.set("dateFrom", f.dateFrom);
       if (f.dateTo)              params.set("dateTo",   f.dateTo);
@@ -167,11 +163,11 @@ export default function CombinedDataTable() {
   }, [limit]);
 
   const currentFilters = useCallback((): Filters => ({
-    page, search, type, sortBy, sortDir, status, sto, dateFrom, dateTo,
-  }), [page, search, type, sortBy, sortDir, status, sto, dateFrom, dateTo]);
+    page, search, sortBy, sortDir, status, sto, dateFrom, dateTo,
+  }), [page, search, sortBy, sortDir, status, sto, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchData({ page: 1, search: "", type: "all", sortBy: "order_id", sortDir: "desc", status: "all", sto: "", dateFrom: "", dateTo: "" });
+    fetchData({ page: 1, search: "", sortBy: "order_id", sortDir: "desc", status: "all", sto: "", dateFrom: "", dateTo: "" });
   }, [fetchData]);
 
   const reload = (overrides: Partial<Filters> = {}) => {
@@ -190,7 +186,6 @@ export default function CombinedDataTable() {
     debounce.current = setTimeout(() => reload({ sto: val, page: 1 }), 350);
   };
 
-  const handleType     = (val: DataType) => { setType(val);     setPage(1); reload({ type: val,     page: 1 }); };
   const handleStatus   = (val: string)   => { setStatus(val);   setPage(1); reload({ status: val,   page: 1 }); };
   const handleDateFrom = (val: string)   => { setDateFrom(val); setPage(1); reload({ dateFrom: val, page: 1 }); };
   const handleDateTo   = (val: string)   => { setDateTo(val);   setPage(1); reload({ dateTo: val,   page: 1 }); };
@@ -203,11 +198,11 @@ export default function CombinedDataTable() {
 
   const goPage = (p: number) => { setPage(p); reload({ page: p }); };
 
-  const hasActiveFilter = status !== "all" || sto || dateFrom || dateTo;
+  const hasActiveFilter = search || status !== "all" || sto || dateFrom || dateTo;
 
   const resetFilters = () => {
-    setStatus("all"); setSto(""); setDateFrom(""); setDateTo(""); setPage(1);
-    reload({ status: "all", sto: "", dateFrom: "", dateTo: "", page: 1 });
+    setSearch(""); setStatus("all"); setSto(""); setDateFrom(""); setDateTo(""); setPage(1);
+    reload({ search: "", status: "all", sto: "", dateFrom: "", dateTo: "", page: 1 });
   };
 
   const sortProps = { sortBy, sortDir, onSort: handleSort };
@@ -223,32 +218,21 @@ export default function CombinedDataTable() {
       {/* ── Card header ─────────────────────────────────── */}
       <div className="card-head" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
 
-        {/* Row 1: title + search + type */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <p className="card-title">Data Pengukuran Order PSB</p>
-            <p className="card-sub">{data ? `${data.total.toLocaleString("id-ID")} total data` : "Memuat…"}</p>
-          </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <div className="search-wrap" style={{ minWidth: 200, maxWidth: 240 }}>
-              <Search size={13} />
-              <input className="search-input" type="text" placeholder="Cari Order ID…"
-                value={search} onChange={(e) => handleSearch(e.target.value)} />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <SlidersHorizontal size={13} style={{ color: "var(--fg-faint)", flexShrink: 0 }} />
-              <select className="field-input" value={type} onChange={(e) => handleType(e.target.value as DataType)}
-                style={{ padding: "7px 28px 7px 10px", fontSize: 12, minWidth: 130 }}>
-                <option value="all">Semua Tipe</option>
-                <option value="indihome">IndiHome</option>
-                <option value="indibiz">IndiBiz</option>
-              </select>
-            </div>
-          </div>
+        {/* Title */}
+        <div>
+          <p className="card-title">Data Pengukuran Order PSB</p>
+          <p className="card-sub">{data ? `${data.total.toLocaleString("id-ID")} total data` : "Memuat…"}</p>
         </div>
 
-        {/* Row 2: filters */}
+        {/* Filter row */}
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+
+          {/* Search Order ID */}
+          <div className="search-wrap" style={{ minWidth: 180, maxWidth: 220 }}>
+            <Search size={13} />
+            <input className="search-input" type="text" placeholder="Cari Order ID…"
+              value={search} onChange={(e) => handleSearch(e.target.value)} />
+          </div>
 
           {/* Status filter */}
           <select value={status} onChange={(e) => handleStatus(e.target.value)}
@@ -260,7 +244,7 @@ export default function CombinedDataTable() {
           </select>
 
           {/* STO filter */}
-          <div className="search-wrap" style={{ minWidth: 160, maxWidth: 200 }}>
+          <div className="search-wrap" style={{ minWidth: 150, maxWidth: 190 }}>
             <Search size={13} />
             <input className="search-input" type="text" placeholder="Filter STO…"
               value={sto} onChange={(e) => handleSto(e.target.value)} />
@@ -299,7 +283,7 @@ export default function CombinedDataTable() {
         ) : !data || data.rows.length === 0 ? (
           <div className="table-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "48px 24px" }}>
             <Database size={32} style={{ opacity: 0.2 }} />
-            <span>{search || type !== "all" || hasActiveFilter ? "Tidak ada data yang cocok." : "Belum ada data. Upload file Excel terlebih dahulu."}</span>
+            <span>{hasActiveFilter ? "Tidak ada data yang cocok." : "Belum ada data. Upload file Excel terlebih dahulu."}</span>
           </div>
         ) : (
           <table className="data-table">
