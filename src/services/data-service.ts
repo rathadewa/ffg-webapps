@@ -4,17 +4,16 @@ import { sql } from "drizzle-orm";
 export type DataType = "indihome" | "indibiz" | "all";
 export type SortDir  = "asc" | "desc";
 
-const SORT_WHITELIST = ["no_order", "type", "sto", "external", "speedy", "last_update", "order_id", "pots"] as const;
+const SORT_WHITELIST = ["order_id", "source", "sto", "external", "speedy", "last_update", "pots"] as const;
 type SortCol = typeof SORT_WHITELIST[number];
 
 function safeSort(col?: string): SortCol {
-  return (SORT_WHITELIST as readonly string[]).includes(col ?? "") ? (col as SortCol) : "no_order";
+  return (SORT_WHITELIST as readonly string[]).includes(col ?? "") ? (col as SortCol) : "order_id";
 }
 
 export interface CombinedRow {
-  no_order:    number;
+  order_id:    string;
   type:        "IndiHome" | "IndiBiz";
-  order_id:    string | null;
   sto:         string | null;
   external:    string | null;
   speedy:      string | null;
@@ -39,57 +38,37 @@ export async function getCombinedData(opts: {
   sortDir?: SortDir;
 }): Promise<CombinedResult> {
   const { page, limit, search, type = "all", sortDir = "desc" } = opts;
-  const offset  = (page - 1) * limit;
-  const col     = safeSort(opts.sortBy);
-  const dir     = sortDir === "asc" ? "ASC" : "DESC";
-  const sp      = search ? `%${search}%` : null;
+  const offset = (page - 1) * limit;
+  const col    = safeSort(opts.sortBy === "type" ? "source" : opts.sortBy);
+  const dir    = sortDir === "asc" ? "ASC" : "DESC";
+  const sp     = search ? `%${search}%` : null;
 
-  /* ── search fragments ───────────────────────────────────── */
-  const homeSearch = sp
-    ? sql`WHERE (h.sto LIKE ${sp} OR h.order_id LIKE ${sp} OR h.external LIKE ${sp} OR h.speedy LIKE ${sp})`
-    : sql``;
-  const bizSearch = sp
-    ? sql`WHERE (b.sto LIKE ${sp} OR b.order_id LIKE ${sp} OR b.external LIKE ${sp} OR b.speedy LIKE ${sp} OR b.pots LIKE ${sp})`
+  const searchFilter = sp
+    ? sql`AND (p.sto LIKE ${sp} OR p.order_id LIKE ${sp} OR p.external LIKE ${sp} OR p.speedy LIKE ${sp} OR p.pots LIKE ${sp})`
     : sql``;
 
-  /* ── type filter on the outer query ────────────────────── */
   const typeFilter =
-    type === "indihome" ? sql`WHERE combined.type = 'IndiHome'`
-    : type === "indibiz" ? sql`WHERE combined.type = 'IndiBiz'`
+    type === "indihome" ? sql`AND p.source = 'indihome'`
+    : type === "indibiz" ? sql`AND p.source = 'indibiz'`
     : sql``;
 
   /* ── count ──────────────────────────────────────────────── */
   const countResult = await db.execute(sql`
-    SELECT COUNT(*) AS total FROM (
-      SELECT 'IndiHome' AS type, h.sto, h.order_id, h.external, h.speedy
-      FROM ffg_indihome h ${homeSearch}
-      UNION ALL
-      SELECT 'IndiBiz'  AS type, b.sto, b.order_id, b.external, b.speedy
-      FROM ffg_indibiz b ${bizSearch}
-    ) AS combined
-    ${typeFilter}
+    SELECT COUNT(*) AS total
+    FROM pengukuran_order_psb p
+    WHERE 1=1 ${typeFilter} ${searchFilter}
   `);
 
   const total = Number((countResult as any)[0]?.[0]?.total ?? 0);
 
   /* ── rows ───────────────────────────────────────────────── */
   const rowsResult = await db.execute(sql`
-    SELECT combined.* FROM (
-      SELECT
-        h.no_order, 'IndiHome' AS type,
-        h.order_id, h.sto, h.external, h.speedy,
-        NULL        AS pots,
-        h.last_update
-      FROM ffg_indihome h ${homeSearch}
-      UNION ALL
-      SELECT
-        b.no_order, 'IndiBiz' AS type,
-        b.order_id, b.sto, b.external, b.speedy,
-        b.pots,
-        b.last_update
-      FROM ffg_indibiz b ${bizSearch}
-    ) AS combined
-    ${typeFilter}
+    SELECT
+      p.order_id,
+      CASE WHEN p.source = 'indihome' THEN 'IndiHome' ELSE 'IndiBiz' END AS type,
+      p.sto, p.external, p.speedy, p.pots, p.last_update
+    FROM pengukuran_order_psb p
+    WHERE 1=1 ${typeFilter} ${searchFilter}
     ORDER BY ${sql.raw(col)} ${sql.raw(dir)}
     LIMIT ${limit} OFFSET ${offset}
   `);

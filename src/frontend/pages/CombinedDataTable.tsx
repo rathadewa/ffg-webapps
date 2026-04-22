@@ -9,9 +9,8 @@ type DataType = "all" | "indihome" | "indibiz";
 type SortDir  = "asc" | "desc";
 
 interface CombinedRow {
-  no_order:    number;
+  order_id:    string;
   type:        "IndiHome" | "IndiBiz";
-  order_id:    string | null;
   sto:         string | null;
   external:    string | null;
   speedy:      string | null;
@@ -32,11 +31,17 @@ function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("session_token") ?? ""}` };
 }
 
+// Parses stored dd-mm-yyyy and formats to locale display
 function fmtDate(d: string | null) {
   if (!d) return null;
-  const dt = new Date(d);
-  if (isNaN(dt.getTime())) return d;
-  return dt.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  const parts = d.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (parts) {
+    const dt = new Date(`${parts[3]}-${parts[2]}-${parts[1]}`);
+    if (!isNaN(dt.getTime())) {
+      return dt.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+    }
+  }
+  return d;
 }
 
 const EMPTY = <span style={{ color: "var(--fg-faint)" }}>—</span>;
@@ -99,7 +104,7 @@ export default function CombinedDataTable() {
 
   const [search,  setSearch]  = useState("");
   const [type,    setType]    = useState<DataType>("all");
-  const [sortBy,  setSortBy]  = useState("no_order");
+  const [sortBy,  setSortBy]  = useState("order_id");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page,    setPage]    = useState(1);
   const limit = 20;
@@ -132,17 +137,16 @@ export default function CombinedDataTable() {
     }
   }, [limit]);
 
-  // Initial load
   useEffect(() => {
-    fetchData({ page: 1, search: "", type: "all", sortBy: "no_order", sortDir: "desc" });
+    fetchData({ page: 1, search: "", type: "all", sortBy: "order_id", sortDir: "desc" });
   }, [fetchData]);
 
   const reload = (overrides: Partial<{ page: number; search: string; type: DataType; sortBy: string; sortDir: SortDir }> = {}) => {
     const next = {
-      page: overrides.page ?? page,
-      search: overrides.search ?? search,
-      type: overrides.type ?? type,
-      sortBy: overrides.sortBy ?? sortBy,
+      page:    overrides.page    ?? page,
+      search:  overrides.search  ?? search,
+      type:    overrides.type    ?? type,
+      sortBy:  overrides.sortBy  ?? sortBy,
       sortDir: overrides.sortDir ?? sortDir,
     };
     fetchData(next);
@@ -181,7 +185,7 @@ export default function CombinedDataTable() {
       {/* ── Card header ─────────────────────────────────── */}
       <div className="card-head" style={{ flexWrap: "wrap", gap: 12 }}>
         <div>
-          <p className="card-title">Data FFG IndiHome & IndiBiz</p>
+          <p className="card-title">Data Pengukuran Order PSB</p>
           <p className="card-sub">
             {data ? `${data.total.toLocaleString("id-ID")} total data` : "Memuat…"}
           </p>
@@ -233,9 +237,8 @@ export default function CombinedDataTable() {
           <table className="data-table">
             <thead>
               <tr>
-                <SortTh col="no_order"    label="No. Order"   {...sortProps} />
-                <SortTh col="type"        label="Tipe"        {...sortProps} />
                 <SortTh col="order_id"    label="Order ID"    {...sortProps} />
+                <SortTh col="source"      label="Tipe"        {...sortProps} />
                 <SortTh col="sto"         label="STO"         {...sortProps} />
                 <SortTh col="external"    label="External"    {...sortProps} />
                 <SortTh col="speedy"      label="Speedy"      {...sortProps} />
@@ -245,14 +248,13 @@ export default function CombinedDataTable() {
             </thead>
             <tbody>
               {data.rows.map((row) => (
-                <tr key={`${row.type}-${row.no_order}`}>
-                  <td className="td-id" style={{ fontVariantNumeric: "tabular-nums" }}>{row.no_order}</td>
+                <tr key={row.order_id}>
+                  <td className="td-id" style={{ fontVariantNumeric: "tabular-nums" }}>{row.order_id}</td>
                   <td>
                     <span className={`badge ${row.type === "IndiHome" ? "badge-type-home" : "badge-type-biz"}`}>
                       {row.type}
                     </span>
                   </td>
-                  <td>{row.order_id ?? EMPTY}</td>
                   <td>{row.sto      ?? EMPTY}</td>
                   <td>{row.external ?? EMPTY}</td>
                   <td>{row.speedy   ?? EMPTY}</td>
