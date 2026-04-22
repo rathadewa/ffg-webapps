@@ -19,6 +19,7 @@ import ManageUsersView from "./ManageUsersView";
 import UploadView from "./UploadView";
 import CombinedDataTable from "./CombinedDataTable";
 import LeaderboardView from "./LeaderboardView";
+import PengukuranOrderPSBView from "./PengukuranOrderPSBView";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -283,7 +284,7 @@ export default function DashboardPage() {
           {activeNav === "users"          && <ManageUsersView />}
           {activeNav === "upload"         && <UploadView />}
           {activeNav === "leaderboard"    && <LeaderboardView />}
-          {activeNav === "pengukuran-psb" && <CombinedDataTable />}
+          {activeNav === "pengukuran-psb" && <PengukuranOrderPSBView />}
           {["history-ticket", "pool-tiket", "inbox-tiket", "pengaturan-user"].includes(activeNav) && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
               Halaman ini sedang dalam pengembangan.
