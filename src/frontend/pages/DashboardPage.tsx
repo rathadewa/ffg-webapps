@@ -21,6 +21,7 @@ import CombinedDataTable from "./CombinedDataTable";
 import LeaderboardView from "./LeaderboardView";
 import PengukuranOrderPSBView from "./PengukuranOrderPSBView";
 import PengaturanUserView from "./PengaturanUserView";
+import HistoryView from "./HistoryView";
 
 /* ── Data ────────────────────────────────────────────────── */
 const WEEKLY = [
@@ -287,7 +288,8 @@ export default function DashboardPage() {
           {activeNav === "leaderboard"      && <LeaderboardView />}
           {activeNav === "pengukuran-psb"   && <PengukuranOrderPSBView />}
           {activeNav === "pengaturan-user"  && <PengaturanUserView />}
-          {["history-ticket", "pool-tiket", "inbox-tiket"].includes(activeNav) && (
+          {activeNav === "history-ticket"   && <HistoryView />}
+          {["pool-tiket", "inbox-tiket"].includes(activeNav) && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
               Halaman ini sedang dalam pengembangan.
             </div>
@@ -296,7 +298,8 @@ export default function DashboardPage() {
           {/* Dashboard content */}
           {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard"
             && activeNav !== "pengukuran-psb" && activeNav !== "pengaturan-user"
-            && !["history-ticket", "pool-tiket", "inbox-tiket"].includes(activeNav)
+            && activeNav !== "history-ticket"
+            && !["pool-tiket", "inbox-tiket"].includes(activeNav)
             && <>
 
           {/* Stats */}

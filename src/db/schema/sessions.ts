@@ -7,4 +7,5 @@ export const sessions = mysqlTable("sessions", {
   email: varchar("email", { length: 255 }).notNull(),
   userId: int("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
 });

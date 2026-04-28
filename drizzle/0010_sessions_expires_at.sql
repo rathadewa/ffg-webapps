@@ -1,0 +1,2 @@
+ALTER TABLE `sessions` ADD COLUMN `expires_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+UPDATE `sessions` SET `expires_at` = DATE_ADD(`created_at`, INTERVAL 1 HOUR);

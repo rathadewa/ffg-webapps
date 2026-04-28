@@ -64,6 +64,48 @@
       "when": 1745366400000,
       "tag": "0008_add_status_column",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1745452800000,
+      "tag": "0009_create_user_ffg",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1745539200000,
+      "tag": "0010_sessions_expires_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1745625600000,
+      "tag": "0011_tiket_pengerjaan",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1745712000000,
+      "tag": "0012_pengerjaan_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1745798400000,
+      "tag": "0013_add_down_time",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1745884800000,
+      "tag": "0014_add_umas_onu_status",
+      "breakpoints": true
     }
   ]
 }
