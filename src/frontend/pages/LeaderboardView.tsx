@@ -1,32 +1,32 @@
-import { useState } from "react";
-import { TrendingUp, Ticket, ChevronLeft, ChevronRight, Copy, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { TrendingUp, TrendingDown, Minus, Ticket, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { BASE_PATH } from "../config";
 
-/* ── Dummy Data ─────────────────────────────────────────── */
-const LEADERBOARD = [
-  { rank: 1,  name: "Irfan Maulana",    tiket: 312, score: 9840 },
-  { rank: 2,  name: "Dewi Kusuma",      tiket: 287, score: 8920 },
-  { rank: 3,  name: "Rizky Fauzan",     tiket: 261, score: 8150 },
-  { rank: 4,  name: "Budi Santoso",     tiket: 234, score: 7340 },
-  { rank: 5,  name: "Siti Rahayu",      tiket: 218, score: 6880 },
-  { rank: 6,  name: "Andi Pratama",     tiket: 196, score: 6120 },
-  { rank: 7,  name: "Hendra Wijaya",    tiket: 181, score: 5670 },
-  { rank: 8,  name: "Nurul Hidayah",    tiket: 165, score: 5210 },
-  { rank: 9,  name: "Fajar Setiawan",   tiket: 148, score: 4730 },
-  { rank: 10, name: "Kartika Sari",     tiket: 132, score: 4180 },
-  { rank: 11, name: "Yoga Permana",     tiket: 117, score: 3650 },
-  { rank: 12, name: "Mega Pratiwi",     tiket: 104, score: 3240 },
-  { rank: 13, name: "Dimas Ardiansyah", tiket: 98,  score: 3010 },
-  { rank: 14, name: "Putri Wulandari",  tiket: 91,  score: 2780 },
-  { rank: 15, name: "Bagas Pramudya",   tiket: 85,  score: 2550 },
-  { rank: 16, name: "Laila Fitriani",   tiket: 79,  score: 2320 },
-  { rank: 17, name: "Rendi Kurniawan",  tiket: 72,  score: 2100 },
-  { rank: 18, name: "Anisa Maharani",   tiket: 66,  score: 1890 },
-  { rank: 19, name: "Taufik Hidayat",   tiket: 59,  score: 1670 },
-  { rank: 20, name: "Yuliana Safitri",  tiket: 51,  score: 1450 },
-];
+/* ── Types ──────────────────────────────────────────────────── */
+type Period = "all" | "daily" | "weekly" | "monthly";
 
+interface LeaderboardEntry {
+  rank:            number;
+  nama:            string;
+  userTelegram:    string | null;
+  sto:             string | null;
+  tiketDikerjakan: number;
+  tiketDone:       number;
+  tiketGagal:      number;
+  avgPickupMenit:  number | null;
+  avgDoneMenit:    number | null;
+  trend:           "up" | "down" | "stable";
+}
+
+/* ── Constants ──────────────────────────────────────────────── */
 const PAGE_SIZE = 10;
-const FILTERS   = ["All Time", "Daily", "Weekly", "Monthly"];
+
+const FILTERS: { label: string; value: Period }[] = [
+  { label: "All Time", value: "all"     },
+  { label: "Daily",    value: "daily"   },
+  { label: "Weekly",   value: "weekly"  },
+  { label: "Monthly",  value: "monthly" },
+];
 
 const RANK_CFG = {
   1: { color: "#f59e0b", avatarBg: "linear-gradient(135deg,#78350f,#b45309)" },
@@ -34,90 +34,103 @@ const RANK_CFG = {
   3: { color: "#f97316", avatarBg: "linear-gradient(135deg,#431407,#9a3412)" },
 } as const;
 
+/* ── Helpers ────────────────────────────────────────────────── */
 function initials(name: string) {
   return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
-function toHandle(name: string) {
-  return "@" + name.toLowerCase().replace(/\s+/g, "_");
-}
-function fmtScore(n: number) {
-  return n.toLocaleString("id-ID");
-}
-function fmtTiket(n: number) {
-  return n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
+
+function fmtDuration(menit: number | null): string {
+  if (menit === null) return "—";
+  if (menit < 60) return `${menit} mnt`;
+  const h = Math.floor(menit / 60);
+  const m = menit % 60;
+  return m > 0 ? `${h}j ${m}mnt` : `${h}j`;
 }
 
-/* ── Top-3 card ─────────────────────────────────────────── */
-function TopCard({ data, featured }: { data: typeof LEADERBOARD[0]; featured: boolean }) {
-  const [copied, setCopied] = useState(false);
-  const cfg      = RANK_CFG[data.rank as 1 | 2 | 3];
-  const idString = `FFG-${String(data.rank).padStart(3, "0")}···${data.score}pts`;
+function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
+  if (trend === "up")     return <TrendingUp  size={13} style={{ color: "var(--ok)"    }} />;
+  if (trend === "down")   return <TrendingDown size={13} style={{ color: "var(--error)" }} />;
+  return                         <Minus        size={13} style={{ color: "var(--fg-faint)" }} />;
+}
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(idString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+/* ── Top-3 card ─────────────────────────────────────────────── */
+function TopCard({ data, featured }: { data: LeaderboardEntry; featured: boolean }) {
+  const cfg = RANK_CFG[data.rank as 1 | 2 | 3];
 
   return (
     <div className={`lb-card${featured ? " featured" : ""}`}>
-      {/* avatar + name */}
       <div className="lb-card-top">
         <div className="lb-card-avatar" style={{ background: cfg.avatarBg, color: cfg.color }}>
-          {initials(data.name)}
-          <span className="lb-card-rank-badge" style={{ background: cfg.color }}>
-            #{data.rank}
-          </span>
+          {initials(data.nama)}
+          <span className="lb-card-rank-badge" style={{ background: cfg.color }}>#{data.rank}</span>
         </div>
         <div className="lb-card-info">
-          <div className="lb-card-name">{data.name}</div>
-          <div className="lb-card-handle">{toHandle(data.name)}</div>
+          <div className="lb-card-name">{data.nama}</div>
+          <div className="lb-card-handle">{data.userTelegram ?? "—"}</div>
         </div>
       </div>
 
-      {/* stats */}
       <div className="lb-card-stats">
         <div className="lb-stat-col">
-          <div className="lb-stat-label">Tiket</div>
-          <div className="lb-stat-value">{data.tiket}</div>
+          <div className="lb-stat-label">Done</div>
+          <div className="lb-stat-value" style={{ color: cfg.color }}>{data.tiketDone}</div>
         </div>
         <div className="lb-stat-col">
-          <div className="lb-stat-label">Score</div>
-          <div className="lb-stat-value" style={{ color: cfg.color }}>{fmtScore(data.score)}</div>
+          <div className="lb-stat-label">Dikerjakan</div>
+          <div className="lb-stat-value">{data.tiketDikerjakan}</div>
         </div>
         <div className="lb-stat-col">
-          <div className="lb-stat-label">Growth</div>
-          <div className="lb-stat-value" style={{ color: "var(--ok)" }}>
-            +{(data.rank === 1 ? 12.4 : data.rank === 2 ? 9.8 : 7.2).toFixed(1)}%
-          </div>
+          <div className="lb-stat-label">Trend</div>
+          <div className="lb-stat-value"><TrendIcon trend={data.trend} /></div>
         </div>
       </div>
 
-      {/* footer */}
       <div className="lb-card-footer">
-        <span className="lb-card-id">{idString}</span>
-        <button className="lb-copy-btn" onClick={handleCopy}>
-          {copied ? <Check size={11} /> : <Copy size={11} />}
-          {copied ? "Tersalin" : "Salin"}
-        </button>
+        <span className="lb-card-id" style={{ fontSize: 11 }}>
+          <Clock size={10} style={{ marginRight: 4 }} />
+          Avg done: {fmtDuration(data.avgDoneMenit)}
+        </span>
       </div>
     </div>
   );
 }
 
-/* ── Main component ─────────────────────────────────────── */
+/* ── Main component ─────────────────────────────────────────── */
 export default function LeaderboardView() {
-  const [filter, setFilter] = useState("All Time");
-  const [page,   setPage]   = useState(1);
+  const [period,  setPeriod]  = useState<Period>("all");
+  const [page,    setPage]    = useState(1);
+  const [data,    setData]    = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
 
-  const top3 = LEADERBOARD.slice(0, 3);
-  const rest  = LEADERBOARD.slice(3);
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("session_token") ?? "";
+      const res   = await fetch(`${BASE_PATH}/api/leaderboard?period=${period}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json  = await res.json() as { data?: LeaderboardEntry[]; error?: string };
+      if (json.error) throw new Error(json.error);
+      setData(json.data ?? []);
+      setPage(1);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [period]);
 
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const top3      = data.slice(0, 3);
+  const rest      = data.slice(3);
   const totalPages = Math.max(1, Math.ceil(rest.length / PAGE_SIZE));
   const paged      = rest.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  /* order: 2nd · 1st · 3rd */
-  const cardOrder = [top3[1]!, top3[0]!, top3[2]!];
+  const cardOrder  = top3.length === 3
+    ? [top3[1]!, top3[0]!, top3[2]!]
+    : top3;
 
   return (
     <div className="lb-wrap">
@@ -128,88 +141,105 @@ export default function LeaderboardView() {
         <div className="lb-filter-tabs">
           {FILTERS.map((f) => (
             <button
-              key={f}
-              className={`lb-filter-tab${filter === f ? " active" : ""}`}
-              onClick={() => setFilter(f)}
+              key={f.value}
+              className={`lb-filter-tab${period === f.value ? " active" : ""}`}
+              onClick={() => setPeriod(f.value)}
             >
-              {f}
+              {f.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Top 3 cards */}
-      <div className="lb-top3-grid">
-        {cardOrder.map((d) => (
-          <TopCard key={d.rank} data={d} featured={d.rank === 1} />
-        ))}
-      </div>
-
-      {/* Table ranks 4+ */}
-      <div className="lb-table-wrap">
-        <div className="lb-table-head">
-          <span>Rank</span>
-          <span>Nama</span>
-          <span>Tiket</span>
-          <span>Score</span>
-          <span>Trend</span>
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--fg-faint)", fontSize: 14 }}>
+          Memuat data...
         </div>
+      )}
 
-        {paged.map((row) => (
-          <div key={row.rank} className="lb-table-row">
-            <span className="lb-rank-num">#{row.rank}</span>
-            <span className="lb-row-name">
-              <div className="lb-row-avatar">{initials(row.name)}</div>
-              <div>
-                <div>{row.name}</div>
-                <div className="lb-row-handle">{toHandle(row.name)}</div>
+      {error && (
+        <div style={{ textAlign: "center", padding: "40px 0", color: "var(--error)", fontSize: 14 }}>
+          Gagal memuat: {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
+          {/* Top 3 cards — order: 2nd · 1st · 3rd */}
+          {cardOrder.length > 0 && (
+            <div className="lb-top3-grid">
+              {cardOrder.map((d) => (
+                <TopCard key={d.rank} data={d} featured={d.rank === 1} />
+              ))}
+            </div>
+          )}
+
+          {/* Table rank 4+ */}
+          {paged.length > 0 && (
+            <div className="lb-table-wrap">
+              <div className="lb-table-head" style={{ gridTemplateColumns: "3rem 1fr 4rem 4rem 4rem 5rem 5rem 3rem" }}>
+                <span>Rank</span>
+                <span>Nama</span>
+                <span style={{ textAlign: "center" }}>Dikerjakan</span>
+                <span style={{ textAlign: "center" }}>Done</span>
+                <span style={{ textAlign: "center" }}>Gagal</span>
+                <span style={{ textAlign: "center" }}>Avg Pickup</span>
+                <span style={{ textAlign: "center" }}>Avg Done</span>
+                <span style={{ textAlign: "center" }}>Trend</span>
               </div>
-            </span>
-            <span className="lb-row-tickets">
-              <Ticket size={12} />
-              {fmtTiket(row.tiket)}
-            </span>
-            <span className="lb-row-score">{fmtScore(row.score)}</span>
-            <span className="lb-row-trend">
-              <TrendingUp size={13} />
-            </span>
-          </div>
-        ))}
 
-        {/* Pagination */}
-        <div className="lb-pagination">
-          <span className="lb-pg-label">
-            Peringkat {(page - 1) * PAGE_SIZE + 4}–{Math.min(page * PAGE_SIZE + 3, LEADERBOARD.length)} dari {LEADERBOARD.length}
-          </span>
-          <div className="lb-pg-controls">
-            <button
-              className="pg-btn"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              aria-label="Halaman sebelumnya"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                className={`pg-btn${page === p ? " active" : ""}`}
-                onClick={() => setPage(p)}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              className="pg-btn"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              aria-label="Halaman berikutnya"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        </div>
-      </div>
+              {paged.map((row) => (
+                <div key={row.rank} className="lb-table-row" style={{ gridTemplateColumns: "3rem 1fr 4rem 4rem 4rem 5rem 5rem 3rem" }}>
+                  <span className="lb-rank-num">#{row.rank}</span>
+                  <span className="lb-row-name">
+                    <div className="lb-row-avatar">{initials(row.nama)}</div>
+                    <div>
+                      <div>{row.nama}</div>
+                      <div className="lb-row-handle">{row.userTelegram ?? "—"}</div>
+                    </div>
+                  </span>
+                  <span style={{ textAlign: "center" }}>
+                    <span className="lb-row-tickets"><Ticket size={12} />{row.tiketDikerjakan}</span>
+                  </span>
+                  <span style={{ textAlign: "center", color: "var(--ok)", fontWeight: 600 }}>{row.tiketDone}</span>
+                  <span style={{ textAlign: "center", color: row.tiketGagal > 0 ? "var(--error)" : "var(--fg-faint)" }}>{row.tiketGagal}</span>
+                  <span style={{ textAlign: "center", fontSize: 12, color: "var(--fg-dim)" }}>{fmtDuration(row.avgPickupMenit)}</span>
+                  <span style={{ textAlign: "center", fontSize: 12, color: "var(--fg-dim)" }}>{fmtDuration(row.avgDoneMenit)}</span>
+                  <span className="lb-row-trend" style={{ justifyContent: "center" }}>
+                    <TrendIcon trend={row.trend} />
+                  </span>
+                </div>
+              ))}
+
+              {/* Pagination */}
+              <div className="lb-pagination">
+                <span className="lb-pg-label">
+                  Peringkat {(page - 1) * PAGE_SIZE + 4}–{Math.min(page * PAGE_SIZE + 3, data.length)} dari {data.length}
+                </span>
+                <div className="lb-pg-controls">
+                  <button className="pg-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                    <ChevronLeft size={14} />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button key={p} className={`pg-btn${page === p ? " active" : ""}`} onClick={() => setPage(p)}>
+                      {p}
+                    </button>
+                  ))}
+                  <button className="pg-btn" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {data.length === 0 && (
+            <div style={{ textAlign: "center", padding: "60px 0", color: "var(--fg-faint)", fontSize: 14 }}>
+              Belum ada data leaderboard.
+            </div>
+          )}
+        </>
+      )}
 
     </div>
   );

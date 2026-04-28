@@ -63,21 +63,21 @@ export async function loginUser(data: {
   }
 
   const token = uuidv4();
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
   await db.insert(sessions).values({
     token,
     email: user.email,
     userId: user.id,
+    expiresAt,
   });
 
   return { token, twoFaSetup: user.twoFaSetup };
 }
 
-const oneHourAgo = () => new Date(Date.now() - 60 * 60 * 1000);
-
 export async function getTwoFaSecret(token: string) {
   const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+    where: and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())),
   });
   if (!session) throw new Error("unauthorised");
 
@@ -97,7 +97,7 @@ export async function getTwoFaSecret(token: string) {
 
 export async function markTwoFaSetup(token: string, code: string) {
   const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+    where: and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())),
   });
   if (!session) throw new Error("unauthorised");
 
@@ -112,7 +112,7 @@ export async function markTwoFaSetup(token: string, code: string) {
 
 export async function verifyTwoFa(token: string, code: string) {
   const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+    where: and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())),
   });
   if (!session) throw new Error("unauthorised");
 
@@ -125,7 +125,7 @@ export async function verifyTwoFa(token: string, code: string) {
 
 export async function getSessionRole(token: string): Promise<UserRole | null> {
   const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+    where: and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())),
   });
   if (!session) return null;
   const user = await db.query.users.findFirst({ where: eq(users.id, session.userId!) });
@@ -203,7 +203,7 @@ export async function logoutUser(token: string) {
 
 export async function getCurrentUser(token: string) {
   const session = await db.query.sessions.findFirst({
-    where: and(eq(sessions.token, token), gt(sessions.createdAt, oneHourAgo())),
+    where: and(eq(sessions.token, token), gt(sessions.expiresAt, new Date())),
   });
 
   if (!session) {
