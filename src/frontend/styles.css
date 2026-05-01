@@ -646,6 +646,7 @@ img { display: block; max-width: 100%; }
 .badge-success { color: var(--ok);   background: rgba(52,211,153,0.1);  border-color: rgba(52,211,153,0.25);  }
 .badge-warning { color: var(--warn); background: rgba(251,191,36,0.1);  border-color: rgba(251,191,36,0.25);  }
 .badge-error   { color: var(--error);background: rgba(248,113,113,0.1); border-color: rgba(248,113,113,0.25); }
+.badge-purple  { color: #a78bfa;     background: rgba(139,92,246,0.1);  border-color: rgba(139,92,246,0.25);  }
 
 /* ══════════════════════════════════════════════════════════
    OTP
@@ -1596,8 +1597,9 @@ select.field-input {
 /* ── Top 3 cards grid ────────────────────────────────────── */
 .lb-top3-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1.25fr 1fr;
   gap: 16px;
+  align-items: center;
 }
 
 .lb-card {
@@ -1614,8 +1616,8 @@ select.field-input {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .lb-card.featured {
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 4px 32px rgba(139,92,246,0.2), 0 0 0 1px rgba(139,92,246,0.12);
+  border-color: rgba(28, 48, 80, 0.55);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
 }
 
 .lb-card-top {

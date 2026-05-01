@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Plus, Pencil, Trash2, X, UserCheck, UserX } from "lucide-react";
 import { BASE_PATH } from "../config";
 
-type UserRole = "Administrator" | "Manager" | "Agent" | "Teknisi";
-const ROLES: UserRole[] = ["Administrator", "Manager", "Agent", "Teknisi"];
+type UserRole = "Superuser" | "Administrator" | "Manager" | "Agent" | "Teknisi";
+const ALL_ROLES: UserRole[]   = ["Superuser", "Administrator", "Manager", "Agent", "Teknisi"];
+const ADMIN_ROLES: UserRole[] = ["Administrator", "Manager", "Agent", "Teknisi"];
 
 interface User {
   id: number;
@@ -26,6 +27,7 @@ interface FormData {
 const EMPTY_FORM: FormData = { name: "", email: "", nik: "", password: "", role: "Agent" };
 
 const ROLE_BADGE: Record<UserRole, string> = {
+  Superuser:     "badge badge-purple",
   Administrator: "badge badge-error",
   Manager:       "badge badge-warning",
   Agent:         "badge badge-success",
@@ -49,6 +51,9 @@ function UserModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const isSuperuser = localStorage.getItem("user_role") === "Superuser";
+  const availableRoles = isSuperuser ? ALL_ROLES : ADMIN_ROLES;
+
   const [form, setForm] = useState<FormData>(
     initial
       ? { name: initial.name, email: initial.email, nik: String(initial.nik), password: "", role: initial.role }
@@ -121,7 +126,7 @@ function UserModal({
               <div className="field">
                 <label className="field-label">Role</label>
                 <select className="field-input" value={form.role} onChange={setField("role")}>
-                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {availableRoles.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
             </div>

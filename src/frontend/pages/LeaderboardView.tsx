@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { TrendingUp, TrendingDown, Minus, Ticket, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Ticket, ChevronLeft, ChevronRight, Clock, Trophy, X, CalendarDays } from "lucide-react";
 import { BASE_PATH } from "../config";
 
 /* ── Types ──────────────────────────────────────────────────── */
-type Period = "all" | "daily" | "weekly" | "monthly";
+type OrderType = "logic" | "fisik";
 
 interface LeaderboardEntry {
   rank:            number;
@@ -21,11 +21,9 @@ interface LeaderboardEntry {
 /* ── Constants ──────────────────────────────────────────────── */
 const PAGE_SIZE = 10;
 
-const FILTERS: { label: string; value: Period }[] = [
-  { label: "All Time", value: "all"     },
-  { label: "Daily",    value: "daily"   },
-  { label: "Weekly",   value: "weekly"  },
-  { label: "Monthly",  value: "monthly" },
+const FILTERS: { label: string; value: OrderType }[] = [
+  { label: "Logic", value: "logic" },
+  { label: "Fisik", value: "fisik" },
 ];
 
 const RANK_CFG = {
@@ -57,15 +55,41 @@ function TrendIcon({ trend }: { trend: "up" | "down" | "stable" }) {
 function TopCard({ data, featured }: { data: LeaderboardEntry; featured: boolean }) {
   const cfg = RANK_CFG[data.rank as 1 | 2 | 3];
 
+  const avatarSize = featured ? 62 : 52;
+  const nameFontSize = featured ? 16 : 15;
+  const statValueFontSize = featured ? 16 : 14;
+
   return (
-    <div className={`lb-card${featured ? " featured" : ""}`}>
+    <div className={`lb-card${featured ? " featured" : ""}`} style={featured ? {
+      padding: 22,
+      transform: "scale(1.03)",
+      zIndex: 1,
+    } : {}}>
+
+      {featured && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            background: "var(--bg-raised)", border: "1px solid var(--border)",
+            borderRadius: 20, padding: "3px 10px",
+            fontSize: 11, fontWeight: 700, color: "var(--fg-dim)", letterSpacing: "0.06em",
+          }}>
+            <Trophy size={12} /> PERINGKAT 1
+          </span>
+        </div>
+      )}
+
       <div className="lb-card-top">
-        <div className="lb-card-avatar" style={{ background: cfg.avatarBg, color: cfg.color }}>
+        <div className="lb-card-avatar" style={{
+          background: cfg.avatarBg, color: cfg.color,
+          width: avatarSize, height: avatarSize,
+          fontSize: featured ? 22 : 16,
+        }}>
           {initials(data.nama)}
           <span className="lb-card-rank-badge" style={{ background: cfg.color }}>#{data.rank}</span>
         </div>
         <div className="lb-card-info">
-          <div className="lb-card-name">{data.nama}</div>
+          <div className="lb-card-name" style={{ fontSize: nameFontSize }}>{data.nama}</div>
           <div className="lb-card-handle">{data.userTelegram ?? "—"}</div>
         </div>
       </div>
@@ -73,11 +97,11 @@ function TopCard({ data, featured }: { data: LeaderboardEntry; featured: boolean
       <div className="lb-card-stats">
         <div className="lb-stat-col">
           <div className="lb-stat-label">Done</div>
-          <div className="lb-stat-value" style={{ color: cfg.color }}>{data.tiketDone}</div>
+          <div className="lb-stat-value" style={{ color: cfg.color, fontSize: statValueFontSize }}>{data.tiketDone}</div>
         </div>
         <div className="lb-stat-col">
           <div className="lb-stat-label">Dikerjakan</div>
-          <div className="lb-stat-value">{data.tiketDikerjakan}</div>
+          <div className="lb-stat-value" style={{ fontSize: statValueFontSize }}>{data.tiketDikerjakan}</div>
         </div>
         <div className="lb-stat-col">
           <div className="lb-stat-label">Trend</div>
@@ -97,18 +121,23 @@ function TopCard({ data, featured }: { data: LeaderboardEntry; featured: boolean
 
 /* ── Main component ─────────────────────────────────────────── */
 export default function LeaderboardView() {
-  const [period,  setPeriod]  = useState<Period>("all");
-  const [page,    setPage]    = useState(1);
-  const [data,    setData]    = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [orderType, setOrderType] = useState<OrderType>("logic");
+  const [dateFrom,  setDateFrom]  = useState("");
+  const [dateTo,    setDateTo]    = useState("");
+  const [page,      setPage]      = useState(1);
+  const [data,      setData]      = useState<LeaderboardEntry[]>([]);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem("session_token") ?? "";
-      const res   = await fetch(`${BASE_PATH}/api/leaderboard?period=${period}`, {
+      const token  = localStorage.getItem("session_token") ?? "";
+      const params = new URLSearchParams({ type: orderType });
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo)   params.set("dateTo",   dateTo);
+      const res   = await fetch(`${BASE_PATH}/api/leaderboard?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json  = await res.json() as { data?: LeaderboardEntry[]; error?: string };
@@ -120,7 +149,7 @@ export default function LeaderboardView() {
     } finally {
       setLoading(false);
     }
-  }, [period]);
+  }, [orderType, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -136,18 +165,103 @@ export default function LeaderboardView() {
     <div className="lb-wrap">
 
       {/* Header */}
-      <div className="lb-top-header">
+      <div className="lb-top-header" style={{ flexWrap: "wrap", gap: 12 }}>
         <h2 className="lb-title">Leaderboard</h2>
-        <div className="lb-filter-tabs">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              className={`lb-filter-tab${period === f.value ? " active" : ""}`}
-              onClick={() => setPeriod(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+
+          {/* Date range pill */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 0,
+            background: "var(--bg-raised)",
+            border: `1px solid ${(dateFrom || dateTo) ? "rgba(99,102,241,0.5)" : "var(--border)"}`,
+            borderRadius: 999,
+            overflow: "hidden",
+            boxShadow: (dateFrom || dateTo) ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+            transition: "border-color 0.2s, box-shadow 0.2s",
+            padding: "4px 4px 4px 12px",
+          }}>
+            {/* Icon + label */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              color: (dateFrom || dateTo) ? "#818cf8" : "var(--fg-dim)",
+              fontSize: 12, fontWeight: 600,
+              paddingRight: 10,
+              borderRight: "1px solid var(--border)",
+              marginRight: 4,
+              flexShrink: 0,
+            }}>
+              <CalendarDays size={13} />
+              Filter Periode
+            </div>
+
+            {/* From */}
+            <input
+              type="date" value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              onKeyDown={(e) => e.preventDefault()}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+              style={{
+                background: "transparent", border: "none",
+                color: dateFrom ? "var(--fg)" : "var(--fg-faint)",
+                fontSize: 12, padding: "4px 6px",
+                outline: "none", cursor: "pointer", width: 120,
+              }}
+            />
+
+            {/* Separator */}
+            <span style={{
+              fontSize: 12, color: "var(--fg-faint)",
+              padding: "0 2px", userSelect: "none",
+            }}>→</span>
+
+            {/* To */}
+            <input
+              type="date" value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              onKeyDown={(e) => e.preventDefault()}
+              onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+              style={{
+                background: "transparent", border: "none",
+                color: dateTo ? "var(--fg)" : "var(--fg-faint)",
+                fontSize: 12, padding: "4px 6px",
+                outline: "none", cursor: "pointer", width: 120,
+              }}
+            />
+
+            {/* Clear button */}
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(""); setDateTo(""); }}
+                title="Hapus filter tanggal"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border-strong)",
+                  borderRadius: 999,
+                  color: "#f87171", cursor: "pointer",
+                  padding: "4px 8px",
+                  marginLeft: 4,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                  transition: "background 0.15s",
+                }}
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+
+          {/* Type tabs */}
+          <div className="lb-filter-tabs">
+            {FILTERS.map((f) => (
+              <button
+                key={f.value}
+                className={`lb-filter-tab${orderType === f.value ? " active" : ""}`}
+                onClick={() => setOrderType(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -167,7 +281,7 @@ export default function LeaderboardView() {
         <>
           {/* Top 3 cards — order: 2nd · 1st · 3rd */}
           {cardOrder.length > 0 && (
-            <div className="lb-top3-grid">
+            <div className="lb-top3-grid" style={{ alignItems: "center" }}>
               {cardOrder.map((d) => (
                 <TopCard key={d.rank} data={d} featured={d.rank === 1} />
               ))}

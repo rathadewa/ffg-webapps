@@ -1,9 +1,9 @@
 import { db } from "../db";
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, and } from "drizzle-orm";
 
 const nowWib = () => new Date(Date.now() + 7 * 60 * 60 * 1000);
 import { pengukuranOrderPsb } from "../db/schema/pengukuran_order_psb";
-import { userFfg } from "../db/schema/user_ffg";
+import { users } from "../db/schema/users";
 import { sendDownNotification } from "./telegram-service";
 
 export type DataType = "indihome" | "indibiz" | "all";
@@ -19,6 +19,7 @@ function safeSort(col?: string): SortCol {
 export interface CombinedRow {
   order_id:    string;
   type:        "IndiHome" | "IndiBiz";
+  order_type:  "logic" | "fisik";
   sto:         string | null;
   external:    string | null;
   speedy:      string | null;
@@ -103,6 +104,7 @@ export async function getCombinedData(opts: {
     SELECT
       p.order_id,
       CASE WHEN p.source = 'indihome' THEN 'IndiHome' ELSE 'IndiBiz' END AS type,
+      p.order_type,
       p.sto, p.external, p.speedy, p.pots, p.last_update, p.status
     FROM pengukuran_order_psb p
     WHERE 1=1
@@ -140,7 +142,9 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
 
   if (status === "DOWN") {
     const pic = existing.sto
-      ? (await db.select().from(userFfg).where(eq(userFfg.sto, existing.sto)).limit(1))[0] ?? null
+      ? (await db.select({ idTelegram: users.idTelegram }).from(users)
+          .where(and(eq(users.sto, existing.sto), eq(users.role, "Agent")))
+          .limit(1))[0] ?? null
       : null;
 
     await sendDownNotification(
@@ -193,7 +197,9 @@ export async function syncStatusFromUmasOnu(): Promise<void> {
 
       if (newStatus === "DOWN") {
         const pic = row.sto
-          ? (await db.select().from(userFfg).where(eq(userFfg.sto, row.sto)).limit(1))[0] ?? null
+          ? (await db.select({ idTelegram: users.idTelegram }).from(users)
+              .where(and(eq(users.sto, row.sto), eq(users.role, "Agent")))
+              .limit(1))[0] ?? null
           : null;
 
         await sendDownNotification(
@@ -220,6 +226,7 @@ export async function syncStatusFromUmasOnu(): Promise<void> {
 export interface HistoryRow {
   order_id:          string;
   type:              string;
+  order_type:        string;
   sto:               string | null;
   external:          string | null;
   speedy:            string | null;
@@ -294,6 +301,7 @@ export async function getHistoryData(opts: {
     SELECT
       p.order_id,
       CASE WHEN p.source = 'indihome' THEN 'IndiHome' ELSE 'IndiBiz' END AS type,
+      p.order_type,
       p.sto, p.external, p.speedy, p.pots, p.last_update, p.status,
       p.pic, p.status_pengerjaan,
       p.down_time, p.pickup_time, p.done_time,

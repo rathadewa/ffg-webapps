@@ -132,7 +132,8 @@ export async function getSessionRole(token: string): Promise<UserRole | null> {
   return (user?.role as UserRole) ?? null;
 }
 
-export async function getAllUsers() {
+export async function getAllUsers(callerRole?: UserRole | null) {
+  const hideSuper = callerRole !== "Superuser";
   const result = await db.select({
     id: users.id,
     name: users.name,
@@ -141,7 +142,8 @@ export async function getAllUsers() {
     role: users.role,
     twoFaSetup: users.twoFaSetup,
     createdAt: users.createdAt,
-  }).from(users);
+  }).from(users)
+    .where(hideSuper ? sql`role != 'Superuser'` : undefined);
   return result;
 }
 

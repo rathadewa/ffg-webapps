@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, ChevronUp, ChevronDown, ChevronsLeft, ChevronsRight,
-  ChevronLeft, ChevronRight, Database, X, ImageOff, Images,
+  ChevronLeft, ChevronRight, Database, X, ImageOff, Images, Download,
 } from "lucide-react";
 import { BASE_PATH } from "../config";
 
@@ -120,51 +120,166 @@ function Pagination({ page, totalPages, total, limit, onPage }: {
 
 /* ── Evidence Modal ─────────────────────────────────────────── */
 function EvidenceModal({ fileIds, onClose }: { fileIds: string[]; onClose: () => void }) {
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  const prev = () => setLightboxIdx((i) => (i !== null ? (i - 1 + fileIds.length) % fileIds.length : null));
+  const next = () => setLightboxIdx((i) => (i !== null ? (i + 1) % fileIds.length : null));
+
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft")  prev();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "Escape")     setLightboxIdx(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIdx]);
+
+  const handleDownload = (fid: string) => {
+    const a = document.createElement("a");
+    a.href = `${BASE_PATH}/api/evidence/${fid}`;
+    a.download = fid;
+    a.click();
+  };
+
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: "rgba(0,0,0,0.7)", display: "flex",
-        alignItems: "center", justifyContent: "center", padding: 24,
-      }}
-      onClick={onClose}
-    >
+    <>
+      {/* Thumbnail grid modal */}
       <div
         style={{
-          background: "var(--bg-card)", borderRadius: 16, padding: 24,
-          maxWidth: 720, width: "100%", maxHeight: "85vh", overflowY: "auto",
-          boxShadow: "var(--shadow-lg)",
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(0,0,0,0.7)", display: "flex",
+          alignItems: "center", justifyContent: "center", padding: 24,
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={onClose}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <span style={{ fontWeight: 700, fontSize: 15 }}>Evidence ({fileIds.length} foto)</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-dim)" }}>
+        <div
+          style={{
+            background: "var(--bg-card)", borderRadius: 16, padding: 24,
+            maxWidth: 720, width: "100%", maxHeight: "85vh", overflowY: "auto",
+            boxShadow: "var(--shadow-lg)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <span style={{ fontWeight: 700, fontSize: 15 }}>Evidence ({fileIds.length} foto)</span>
+            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--fg-dim)" }}>
+              <X size={18} />
+            </button>
+          </div>
+
+          {fileIds.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "var(--fg-faint)" }}>
+              <ImageOff size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
+              <div style={{ fontSize: 13 }}>Tidak ada evidence</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              {fileIds.map((fid, idx) => (
+                <div
+                  key={fid}
+                  onClick={(e) => { e.stopPropagation(); setLightboxIdx(idx); }}
+                  style={{ cursor: "zoom-in", borderRadius: 10, overflow: "hidden", background: "var(--bg-raised)", aspectRatio: "1" }}
+                >
+                  <img
+                    src={`${BASE_PATH}/api/evidence/${fid}`}
+                    alt="evidence"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "opacity 0.15s" }}
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Lightbox */}
+      {lightboxIdx !== null && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1100,
+            background: "rgba(0,0,0,0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+          onClick={() => setLightboxIdx(null)}
+        >
+          {/* Close */}
+          <button
+            onClick={() => setLightboxIdx(null)}
+            style={{
+              position: "absolute", top: 16, right: 16,
+              background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 999,
+              color: "#fff", cursor: "pointer", padding: 10, display: "flex",
+            }}
+          >
             <X size={18} />
           </button>
-        </div>
 
-        {fileIds.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--fg-faint)" }}>
-            <ImageOff size={32} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <div style={{ fontSize: 13 }}>Tidak ada evidence</div>
+          {/* Download */}
+          <button
+            onClick={(e) => { e.stopPropagation(); handleDownload(fileIds[lightboxIdx]!); }}
+            style={{
+              position: "absolute", top: 16, right: 60,
+              background: "rgba(59,130,246,0.8)", border: "none", borderRadius: 999,
+              color: "#fff", cursor: "pointer", padding: 10, display: "flex",
+              gap: 6, alignItems: "center", fontSize: 12, fontWeight: 600,
+            }}
+          >
+            <Download size={14} /> Download
+          </button>
+
+          {/* Counter */}
+          <div style={{
+            position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)",
+            color: "rgba(255,255,255,0.6)", fontSize: 12,
+          }}>
+            {lightboxIdx + 1} / {fileIds.length}
           </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-            {fileIds.map((fid) => (
-              <a key={fid} href={`${BASE_PATH}/api/evidence/${fid}`} target="_blank" rel="noreferrer">
-                <img
-                  src={`${BASE_PATH}/api/evidence/${fid}`}
-                  alt="evidence"
-                  style={{ width: "100%", borderRadius: 10, objectFit: "cover", aspectRatio: "1", background: "var(--bg-raised)" }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-                />
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+
+          {/* Prev */}
+          {fileIds.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); prev(); }}
+              style={{
+                position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 999,
+                color: "#fff", cursor: "pointer", padding: 12, display: "flex",
+              }}
+            >
+              <ChevronLeft size={22} />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={`${BASE_PATH}/api/evidence/${fileIds[lightboxIdx]}`}
+            alt="evidence"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "calc(100vw - 140px)", maxHeight: "calc(100vh - 100px)",
+              objectFit: "contain", borderRadius: 8,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+            }}
+          />
+
+          {/* Next */}
+          {fileIds.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); next(); }}
+              style={{
+                position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
+                background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 999,
+                color: "#fff", cursor: "pointer", padding: 12, display: "flex",
+              }}
+            >
+              <ChevronRight size={22} />
+            </button>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
