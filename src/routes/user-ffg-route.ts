@@ -55,6 +55,7 @@ export const userFfgRoute = new Elysia()
   }, {
     body: t.Object({
       nama:       t.String(),
+      email:      t.String(),
       distrik:    t.Optional(t.String()),
       hsa:        t.Optional(t.String()),
       sto:        t.Optional(t.String()),

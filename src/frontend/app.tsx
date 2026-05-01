@@ -11,7 +11,7 @@ import Setup2FAPage from "./pages/Setup2FAPage";
 import DashboardPage from "./pages/DashboardPage";
 
 const SESSION_DURATION = 60 * 60 * 1000; // 1 jam
-const ADMIN_ROLES = ["Administrator", "Manager"];
+const ADMIN_ROLES = ["Superuser", "Administrator", "Manager"];
 
 export function isSessionValid(): boolean {
   if (localStorage.getItem("is_logged_in") !== "true") return false;
@@ -117,9 +117,9 @@ function App() {
             <Route path="/register" element={<AdminRoute><RegisterPage /></AdminRoute>} />
 
             {/* 2FA flow — bagian dari proses login, belum butuh auth penuh */}
-            <Route path="/setup-2fa"   element={<Setup2FAPage />} />
-            <Route path="/verify-2fa"  element={<Verify2FAPage />} />
-            <Route path="/verify-otp"  element={<VerifyOTPPage />} />
+            <Route path="/setup-2fa"   element={<GuestRoute><Setup2FAPage /></GuestRoute>} />
+            <Route path="/verify-2fa"  element={<GuestRoute><Verify2FAPage /></GuestRoute>} />
+            <Route path="/verify-otp"  element={<GuestRoute><VerifyOTPPage /></GuestRoute>} />
 
             {/* Protected routes — redirect ke /login jika belum login */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

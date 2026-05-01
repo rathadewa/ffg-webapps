@@ -3,9 +3,9 @@ import mysql from "mysql2/promise";
 import * as usersSchema from "./schema/users";
 import * as sessionsSchema from "./schema/sessions";
 import * as pengukuranSchema from "./schema/pengukuran_order_psb";
-import * as userFfgSchema from "./schema/user_ffg";
+import * as tiketSchema from "./schema/tiket_pengerjaan";
 
-const schema = { ...usersSchema, ...sessionsSchema, ...pengukuranSchema, ...userFfgSchema };
+const schema = { ...usersSchema, ...sessionsSchema, ...pengukuranSchema, ...tiketSchema };
 
 const pool = mysql.createPool({
   host:     Bun.env.DB_HOST     ?? "localhost",

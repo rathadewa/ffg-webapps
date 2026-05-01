@@ -10,6 +10,7 @@ type SortDir = "asc" | "desc";
 interface CombinedRow {
   order_id:    string;
   type:        "IndiHome" | "IndiBiz";
+  order_type:  "logic" | "fisik";
   sto:         string | null;
   external:    string | null;
   speedy:      string | null;
@@ -301,6 +302,7 @@ export default function CombinedDataTable() {
               <tr>
                 <SortTh col="order_id"    label="Order ID"    {...sortProps} />
                 <SortTh col="source"      label="Tipe"        {...sortProps} />
+                <th>Jenis</th>
                 <SortTh col="status"      label="Status"      {...sortProps} />
                 <SortTh col="sto"         label="STO"         {...sortProps} />
                 <SortTh col="external"    label="External"    {...sortProps} />
@@ -316,6 +318,16 @@ export default function CombinedDataTable() {
                   <td>
                     <span className={`badge ${row.type === "IndiHome" ? "badge-type-home" : "badge-type-biz"}`}>
                       {row.type}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{
+                      background: row.order_type === "logic" ? "rgba(139,92,246,0.15)" : "rgba(20,184,166,0.15)",
+                      color: row.order_type === "logic" ? "#a78bfa" : "#2dd4bf",
+                      padding: "2px 8px", borderRadius: 6,
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "capitalize",
+                    }}>
+                      {row.order_type}
                     </span>
                   </td>
                   <td><StatusBadge status={row.status} /></td>

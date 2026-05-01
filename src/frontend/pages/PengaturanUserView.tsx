@@ -10,6 +10,7 @@ import { BASE_PATH } from "../config";
 interface UserFfg {
   id:         number;
   nama:       string;
+  email:      string;
   distrik:    string | null;
   hsa:        string | null;
   sto:        string | null;
@@ -26,13 +27,14 @@ interface PageResult {
 
 interface FormData {
   nama:       string;
+  email:      string;
   distrik:    string;
   hsa:        string;
   sto:        string;
   idTelegram: string;
 }
 
-const EMPTY_FORM: FormData = { nama: "", distrik: "", hsa: "", sto: "", idTelegram: "" };
+const EMPTY_FORM: FormData = { nama: "", email: "", distrik: "", hsa: "", sto: "", idTelegram: "" };
 
 function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("session_token") ?? ""}` };
@@ -84,11 +86,17 @@ function Modal({ title, onClose, onSubmit, form, setForm, loading }: {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {inp("nama",       "Nama",        "Nama lengkap")}
+          {inp("email",      "Email Login", "email@contoh.com")}
           {inp("distrik",    "Distrik",     "Distrik")}
           {inp("hsa",        "HSA",         "Kode HSA")}
           {inp("sto",        "STO",         "Kode STO")}
           {inp("idTelegram", "ID Telegram", "@username")}
         </div>
+        {title === "Tambah User" && (
+          <p style={{ fontSize: 11, color: "var(--fg-faint)", marginTop: -6 }}>
+            Password default: <strong>Agent@12345</strong> — bisa diubah setelah login.
+          </p>
+        )}
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
           <button onClick={onClose} style={{
             background: "none", border: "1px solid var(--border)",
@@ -237,7 +245,7 @@ export default function PengaturanUserView() {
   const openAdd = () => { setForm(EMPTY_FORM); setFormError(""); setModal("add"); };
   const openEdit = (row: UserFfg) => {
     setEditing(row);
-    setForm({ nama: row.nama, distrik: row.distrik ?? "", hsa: row.hsa ?? "", sto: row.sto ?? "", idTelegram: row.idTelegram ?? "" });
+    setForm({ nama: row.nama, email: row.email, distrik: row.distrik ?? "", hsa: row.hsa ?? "", sto: row.sto ?? "", idTelegram: row.idTelegram ?? "" });
     setFormError("");
     setModal("edit");
   };
@@ -245,11 +253,13 @@ export default function PengaturanUserView() {
 
   const handleSave = async () => {
     if (!form.nama.trim()) { setFormError("Nama wajib diisi."); return; }
+    if (modal === "add" && !form.email.trim()) { setFormError("Email wajib diisi untuk user baru."); return; }
     setSaving(true);
     setFormError("");
     try {
       const body = {
         nama:       form.nama.trim(),
+        email:      form.email.trim()      || undefined,
         distrik:    form.distrik.trim()    || undefined,
         hsa:        form.hsa.trim()        || undefined,
         sto:        form.sto.trim()        || undefined,
@@ -364,6 +374,7 @@ export default function PengaturanUserView() {
               <tr>
                 <th>No</th>
                 <th>Nama</th>
+                <th>Email Login</th>
                 <th>Distrik</th>
                 <th>HSA</th>
                 <th>STO</th>
@@ -376,6 +387,7 @@ export default function PengaturanUserView() {
                 <tr key={row.id}>
                   <td style={{ color: "var(--fg-faint)", fontSize: 12 }}>{(page - 1) * limit + idx + 1}</td>
                   <td style={{ fontWeight: 600 }}>{row.nama}</td>
+                  <td style={{ fontFamily: "monospace", fontSize: 12 }}>{row.email}</td>
                   <td>{row.distrik ?? <span style={{ color: "var(--fg-faint)" }}>—</span>}</td>
                   <td>{row.hsa     ?? <span style={{ color: "var(--fg-faint)" }}>—</span>}</td>
                   <td>{row.sto     ?? <span style={{ color: "var(--fg-faint)" }}>—</span>}</td>

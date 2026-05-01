@@ -1,12 +1,12 @@
 import { Elysia, t } from "elysia";
 import { getSessionRole } from "../services/user-service";
-import { getLeaderboard, Period } from "../services/leaderboard-service";
+import { getLeaderboard, OrderType } from "../services/leaderboard-service";
 
 function getToken(headers: Record<string, string | undefined>): string {
   return (headers["authorization"] ?? "").split(" ")[1] ?? "";
 }
 
-const VALID_PERIODS = new Set<Period>(["all", "daily", "weekly", "monthly"]);
+const VALID_TYPES = new Set<OrderType>(["logic", "fisik"]);
 
 export const leaderboardRoute = new Elysia()
   .get("/api/leaderboard", async ({ headers, query, set }) => {
@@ -16,15 +16,22 @@ export const leaderboardRoute = new Elysia()
       const role = await getSessionRole(token);
       if (!role)  { set.status = 401; return { error: "unauthorised" }; }
 
-      const period = VALID_PERIODS.has(query.period as Period)
-        ? (query.period as Period)
-        : "all";
+      const orderType = VALID_TYPES.has(query.type as OrderType)
+        ? (query.type as OrderType)
+        : "logic";
 
-      return { data: await getLeaderboard(period) };
+      const dateFrom = query.dateFrom?.trim() || undefined;
+      const dateTo   = query.dateTo?.trim()   || undefined;
+
+      return { data: await getLeaderboard(orderType, dateFrom, dateTo) };
     } catch (error) {
       set.status = 500;
       return { error: (error as Error).message };
     }
   }, {
-    query: t.Object({ period: t.Optional(t.String()) }),
+    query: t.Object({
+      type:     t.Optional(t.String()),
+      dateFrom: t.Optional(t.String()),
+      dateTo:   t.Optional(t.String()),
+    }),
   });

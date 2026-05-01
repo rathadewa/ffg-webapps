@@ -1,10 +1,13 @@
 import { db } from "../db";
-import { userFfg } from "../db/schema/user_ffg";
-import { eq, sql, like, and, SQL } from "drizzle-orm";
+import { users } from "../db/schema/users";
+import { eq, like, and, sql, SQL } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { generateSecret } from "otplib";
 
 export interface UserFfgRow {
   id:         number;
   nama:       string;
+  email:      string;
   distrik:    string | null;
   hsa:        string | null;
   sto:        string | null;
@@ -20,25 +23,33 @@ export interface UserFfgResult {
 }
 
 export async function listUserFfg(opts: {
-  page:    number;
-  limit:   number;
-  search?: string;
-  distrik?:string;
-  sto?:    string;
+  page:     number;
+  limit:    number;
+  search?:  string;
+  distrik?: string;
+  sto?:     string;
 }): Promise<UserFfgResult> {
   const { page, limit, search, distrik, sto } = opts;
   const offset = (page - 1) * limit;
 
-  const conditions: SQL[] = [];
-  if (search)  conditions.push(like(userFfg.nama,    `%${search}%`));
-  if (distrik) conditions.push(like(userFfg.distrik, `%${distrik}%`));
-  if (sto)     conditions.push(like(userFfg.sto,     `%${sto}%`));
+  const conditions: SQL[] = [eq(users.role, "Agent")];
+  if (search)  conditions.push(like(users.name,    `%${search}%`));
+  if (distrik) conditions.push(like(users.distrik, `%${distrik}%`));
+  if (sto)     conditions.push(like(users.sto,     `%${sto}%`));
 
-  const where = conditions.length ? and(...conditions) : undefined;
+  const where = and(...conditions);
 
   const [countResult, rowsResult] = await Promise.all([
-    db.select({ total: sql<number>`COUNT(*)` }).from(userFfg).where(where),
-    db.select().from(userFfg).where(where).limit(limit).offset(offset).orderBy(userFfg.id),
+    db.select({ total: sql<number>`COUNT(*)` }).from(users).where(where),
+    db.select({
+      id:         users.id,
+      name:       users.name,
+      email:      users.email,
+      distrik:    users.distrik,
+      hsa:        users.hsa,
+      sto:        users.sto,
+      idTelegram: users.idTelegram,
+    }).from(users).where(where).limit(limit).offset(offset).orderBy(users.id),
   ]);
 
   const total = Number(countResult[0]?.total ?? 0);
@@ -46,10 +57,11 @@ export async function listUserFfg(opts: {
   return {
     rows: rowsResult.map((r) => ({
       id:         r.id,
-      nama:       r.nama,
-      distrik:    r.distrik ?? null,
-      hsa:        r.hsa     ?? null,
-      sto:        r.sto     ?? null,
+      nama:       r.name,
+      email:      r.email,
+      distrik:    r.distrik    ?? null,
+      hsa:        r.hsa        ?? null,
+      sto:        r.sto        ?? null,
       idTelegram: r.idTelegram ?? null,
     })),
     total,
@@ -60,29 +72,43 @@ export async function listUserFfg(opts: {
 }
 
 export async function createUserFfg(data: {
-  nama: string; distrik?: string; hsa?: string; sto?: string; idTelegram?: string;
+  nama: string; email: string; distrik?: string; hsa?: string; sto?: string; idTelegram?: string;
 }): Promise<void> {
-  await db.insert(userFfg).values({
-    nama:       data.nama,
-    distrik:    data.distrik    ?? null,
-    hsa:        data.hsa        ?? null,
-    sto:        data.sto        ?? null,
-    idTelegram: data.idTelegram ?? null,
+  const existing = await db.query.users.findFirst({ where: eq(users.email, data.email) });
+  if (existing) throw new Error("Email sudah terdaftar");
+
+  const hashedPassword = await bcrypt.hash("Agent@12345", 10);
+
+  await db.insert(users).values({
+    name:        data.nama,
+    email:       data.email,
+    password:    hashedPassword,
+    role:        "Agent",
+    distrik:     data.distrik    ?? null,
+    hsa:         data.hsa        ?? null,
+    sto:         data.sto        ?? null,
+    idTelegram:  data.idTelegram ?? null,
+    twoFaSecret: generateSecret(),
   });
 }
 
 export async function updateUserFfg(id: number, data: {
   nama?: string; distrik?: string; hsa?: string; sto?: string; idTelegram?: string;
 }): Promise<void> {
-  await db.update(userFfg).set({
-    nama:       data.nama,
-    distrik:    data.distrik    ?? null,
-    hsa:        data.hsa        ?? null,
-    sto:        data.sto        ?? null,
-    idTelegram: data.idTelegram ?? null,
-  }).where(eq(userFfg.id, id));
+  const updates: Record<string, unknown> = {};
+  if (data.nama        !== undefined) updates.name        = data.nama;
+  if (data.distrik     !== undefined) updates.distrik     = data.distrik    || null;
+  if (data.hsa         !== undefined) updates.hsa         = data.hsa        || null;
+  if (data.sto         !== undefined) updates.sto         = data.sto        || null;
+  if (data.idTelegram  !== undefined) updates.idTelegram  = data.idTelegram || null;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(users)
+      .set(updates as any)
+      .where(and(eq(users.id, id), eq(users.role, "Agent")));
+  }
 }
 
 export async function deleteUserFfg(id: number): Promise<void> {
-  await db.delete(userFfg).where(eq(userFfg.id, id));
+  await db.delete(users).where(and(eq(users.id, id), eq(users.role, "Agent")));
 }

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, UserPlus, Activity, Zap, LogOut,
   TrendingUp, TrendingDown, PanelLeftClose, PanelLeftOpen,
   Menu, X, Upload, Trophy, ClipboardList, History, Layers,
-  Inbox, UserCog,
+  Inbox,
 } from "lucide-react";
 import { BASE_PATH } from "../config";
 import {
@@ -20,7 +20,7 @@ import UploadView from "./UploadView";
 import CombinedDataTable from "./CombinedDataTable";
 import LeaderboardView from "./LeaderboardView";
 import PengukuranOrderPSBView from "./PengukuranOrderPSBView";
-import PengaturanUserView from "./PengaturanUserView";
+
 import HistoryView from "./HistoryView";
 
 /* ── Data ────────────────────────────────────────────────── */
@@ -72,7 +72,6 @@ const NAV_FG = [
   { id: "history-ticket",  Icon: History,       label: "History Pengerjaan Ticket" },
   { id: "pool-tiket",      Icon: Layers,        label: "Pool Tiket Kendala Logik"  },
   { id: "inbox-tiket",     Icon: Inbox,         label: "Inbox Tiket"               },
-  { id: "pengaturan-user", Icon: UserCog,       label: "Pengaturan User"           },
 ];
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
   active:   { label: "Aktif",    cls: "badge badge-success" },
@@ -152,7 +151,7 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed]         = useState(false);
   const [mobileOpen, setMobileOpen]       = useState(false);
   const [currentUser, setCurrentUser]     = useState<{ name: string; email: string; role: string } | null>(null);
-  const [isAdministrator, setIsAdministrator] = useState(localStorage.getItem("user_role") === "Administrator");
+  const [isAdministrator, setIsAdministrator] = useState(["Superuser", "Administrator"].includes(localStorage.getItem("user_role") ?? ""));
 
   useEffect(() => {
     const token = localStorage.getItem("session_token");
@@ -163,7 +162,7 @@ export default function DashboardPage() {
         if (json.data) {
           setCurrentUser(json.data);
           localStorage.setItem("user_role", json.data.role);
-          setIsAdministrator(json.data.role === "Administrator");
+          setIsAdministrator(["Superuser", "Administrator"].includes(json.data.role));
         }
       })
       .catch(() => {});
@@ -287,7 +286,7 @@ export default function DashboardPage() {
           {activeNav === "upload"           && <UploadView />}
           {activeNav === "leaderboard"      && <LeaderboardView />}
           {activeNav === "pengukuran-psb"   && <PengukuranOrderPSBView />}
-          {activeNav === "pengaturan-user"  && <PengaturanUserView />}
+
           {activeNav === "history-ticket"   && <HistoryView />}
           {["pool-tiket", "inbox-tiket"].includes(activeNav) && (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, color: "var(--fg-faint)", fontSize: 14 }}>
@@ -297,8 +296,7 @@ export default function DashboardPage() {
 
           {/* Dashboard content */}
           {activeNav !== "users" && activeNav !== "upload" && activeNav !== "leaderboard"
-            && activeNav !== "pengukuran-psb" && activeNav !== "pengaturan-user"
-            && activeNav !== "history-ticket"
+            && activeNav !== "pengukuran-psb" && activeNav !== "history-ticket"
             && !["pool-tiket", "inbox-tiket"].includes(activeNav)
             && <>
 

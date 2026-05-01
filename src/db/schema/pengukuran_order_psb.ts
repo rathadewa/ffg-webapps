@@ -10,6 +10,9 @@ export const pengukuranOrderPsb = mysqlTable("pengukuran_order_psb", {
   pots:             varchar("pots",             { length: 255 }),
   status:           varchar("status",           { length: 15  }),
 
+  // Tipe pekerjaan
+  orderType:        mysqlEnum("order_type", ["logic", "fisik"]).notNull().default("logic"),
+
   // Kolom status dari UMAS ONU
   umasOnuStatus:    varchar("umas_onu_status",  { length: 20  }),
 

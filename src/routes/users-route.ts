@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { registerUser, loginUser, getCurrentUser, logoutUser, markTwoFaSetup, getTwoFaSecret, verifyTwoFa, getAllUsers, createUserByAdmin, updateUser, deleteUser, getSessionRole } from "../services/user-service";
 import type { UserRole } from "../db/schema/users";
 
-const ADMIN_ROLES: UserRole[] = ["Administrator", "Manager"];
+const ADMIN_ROLES: UserRole[] = ["Superuser", "Administrator", "Manager"];
 
 async function requireRole(headers: Record<string, string | undefined>, set: { status?: unknown }): Promise<string | null> {
   const authorization = headers["authorization"] ?? "";
@@ -117,7 +117,8 @@ export const usersRoute = new Elysia()
     try {
       const token = await requireRole(headers, set);
       if (!token) return { error: "Akses ditolak." };
-      const data = await getAllUsers();
+      const callerRole = await getSessionRole(token);
+      const data = await getAllUsers(callerRole);
       return { data };
     } catch (error) {
       set.status = 500;
@@ -128,6 +129,10 @@ export const usersRoute = new Elysia()
     try {
       const token = await requireRole(headers, set);
       if (!token) return { error: "Akses ditolak." };
+      const callerRole = await getSessionRole(token);
+      if (body.role === "Superuser" && callerRole !== "Superuser") {
+        set.status = 403; return { error: "Hanya Superuser yang dapat membuat akun Superuser." };
+      }
       await createUserByAdmin(body);
       set.status = 201;
       return { data: "OK" };
@@ -141,13 +146,17 @@ export const usersRoute = new Elysia()
       email:    t.String(),
       nik:      t.Number(),
       password: t.String(),
-      role:     t.Union([t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")]),
+      role:     t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")]),
     }),
   })
   .put("/api/users/:id", async ({ params, body, headers, set }) => {
     try {
       const token = await requireRole(headers, set);
       if (!token) return { error: "Akses ditolak." };
+      const callerRole = await getSessionRole(token);
+      if (body.role === "Superuser" && callerRole !== "Superuser") {
+        set.status = 403; return { error: "Hanya Superuser yang dapat mengubah role menjadi Superuser." };
+      }
       await updateUser(Number(params.id), body);
       return { data: "OK" };
     } catch (error) {
@@ -160,7 +169,7 @@ export const usersRoute = new Elysia()
       email:    t.Optional(t.String()),
       nik:      t.Optional(t.Number()),
       password: t.Optional(t.String()),
-      role:     t.Optional(t.Union([t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")])),
+      role:     t.Optional(t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")])),
     }),
   })
   .delete("/api/users/:id", async ({ params, headers, set }) => {
