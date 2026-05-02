@@ -267,6 +267,8 @@ export async function getHistoryData(opts: {
   sto?:               string;
   sortBy?:            string;
   sortDir?:           SortDir;
+  dateFrom?:          string;   // yyyy-mm-dd, filter by down_time
+  dateTo?:            string;   // yyyy-mm-dd, filter by down_time
 }): Promise<HistoryResult> {
   const { page, limit, search, sortDir = "desc" } = opts;
   const offset = (page - 1) * limit;
@@ -290,10 +292,16 @@ export async function getHistoryData(opts: {
     ? sql`AND p.sto LIKE ${"%" + opts.sto + "%"}`
     : sql``;
 
+  const dateFilter =
+    opts.dateFrom && opts.dateTo ? sql`AND p.down_time >= ${opts.dateFrom} AND p.down_time < DATE_ADD(${opts.dateTo}, INTERVAL 1 DAY)` :
+    opts.dateFrom                ? sql`AND p.down_time >= ${opts.dateFrom}` :
+    opts.dateTo                  ? sql`AND p.down_time < DATE_ADD(${opts.dateTo}, INTERVAL 1 DAY)` :
+    sql``;
+
   const countResult = await db.execute(sql`
     SELECT COUNT(*) AS total
     FROM pengukuran_order_psb p
-    WHERE 1=1 ${statusFilter} ${spFilter} ${searchFilter} ${stoFilter}
+    WHERE 1=1 ${statusFilter} ${spFilter} ${searchFilter} ${stoFilter} ${dateFilter}
   `);
   const total = Number((countResult as any)[0]?.[0]?.total ?? 0);
 
@@ -307,7 +315,7 @@ export async function getHistoryData(opts: {
       p.down_time, p.pickup_time, p.done_time,
       p.penyebab_loss, p.segmen_infra, p.actsol, p.evidence
     FROM pengukuran_order_psb p
-    WHERE 1=1 ${statusFilter} ${spFilter} ${searchFilter} ${stoFilter}
+    WHERE 1=1 ${statusFilter} ${spFilter} ${searchFilter} ${stoFilter} ${dateFilter}
     ORDER BY ${sql.raw(col)} ${sql.raw(dir)}
     LIMIT ${limit} OFFSET ${offset}
   `);
