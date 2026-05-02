@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { users, type UserRole } from "../db/schema/users";
 import { sessions } from "../db/schema/sessions";
-import { eq, or, and, gt } from "drizzle-orm";
+import { eq, or, and, gt, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { generateSecret, verifySync, NobleCryptoPlugin, ScureBase32Plugin } from "otplib";
@@ -135,27 +135,38 @@ export async function getSessionRole(token: string): Promise<UserRole | null> {
 export async function getAllUsers(callerRole?: UserRole | null) {
   const hideSuper = callerRole !== "Superuser";
   const result = await db.select({
-    id: users.id,
-    name: users.name,
-    email: users.email,
-    nik: users.nik,
-    role: users.role,
+    id:         users.id,
+    name:       users.name,
+    email:      users.email,
+    nik:        users.nik,
+    role:       users.role,
     twoFaSetup: users.twoFaSetup,
-    createdAt: users.createdAt,
+    createdAt:  users.createdAt,
+    distrik:    users.distrik,
+    hsa:        users.hsa,
+    sto:        users.sto,
+    idTelegram: users.idTelegram,
   }).from(users)
     .where(hideSuper ? sql`role != 'Superuser'` : undefined);
   return result;
 }
 
 export async function createUserByAdmin(data: {
-  name: string;
-  email: string;
-  nik: number;
-  password: string;
-  role: UserRole;
+  name:       string;
+  email:      string;
+  nik?:       number;
+  password:   string;
+  role:       UserRole;
+  distrik?:   string;
+  hsa?:       string;
+  sto?:       string;
+  idTelegram?: string;
 }) {
   const existing = await db.query.users.findFirst({
-    where: or(eq(users.nik, data.nik), eq(users.email, data.email)),
+    where: or(
+      data.nik   ? eq(users.nik,   data.nik)   : undefined,
+      data.email ? eq(users.email, data.email) : undefined,
+    ),
   });
   if (existing) throw new Error("NIK atau email sudah terdaftar");
 
@@ -163,31 +174,43 @@ export async function createUserByAdmin(data: {
   const twoFaSecret = generateSecret();
 
   await db.insert(users).values({
-    name: data.name,
-    email: data.email,
-    nik: data.nik,
-    role: data.role,
-    password: hashedPassword,
+    name:       data.name,
+    email:      data.email,
+    nik:        data.nik,
+    role:       data.role,
+    password:   hashedPassword,
     twoFaSecret,
+    distrik:    data.distrik,
+    hsa:        data.hsa,
+    sto:        data.sto,
+    idTelegram: data.idTelegram,
   });
 }
 
 export async function updateUser(id: number, data: {
-  name?: string;
-  email?: string;
-  nik?: number;
-  password?: string;
-  role?: UserRole;
+  name?:       string;
+  email?:      string;
+  nik?:        number;
+  password?:   string;
+  role?:       UserRole;
+  distrik?:    string;
+  hsa?:        string;
+  sto?:        string;
+  idTelegram?: string;
 }) {
   const existing = await db.query.users.findFirst({ where: eq(users.id, id) });
   if (!existing) throw new Error("User tidak ditemukan");
 
   const updates: Partial<typeof users.$inferInsert> = {};
-  if (data.name)     updates.name  = data.name;
-  if (data.email)    updates.email = data.email;
-  if (data.nik)      updates.nik   = data.nik;
-  if (data.role)     updates.role  = data.role;
-  if (data.password) updates.password = await bcrypt.hash(data.password, 10);
+  if (data.name)       updates.name       = data.name;
+  if (data.email)      updates.email      = data.email;
+  if (data.nik)        updates.nik        = data.nik;
+  if (data.role)       updates.role       = data.role;
+  if (data.password)   updates.password   = await bcrypt.hash(data.password, 10);
+  if (data.distrik    !== undefined) updates.distrik    = data.distrik    || null;
+  if (data.hsa        !== undefined) updates.hsa        = data.hsa        || null;
+  if (data.sto        !== undefined) updates.sto        = data.sto        || null;
+  if (data.idTelegram !== undefined) updates.idTelegram = data.idTelegram || null;
 
   if (Object.keys(updates).length > 0) {
     await db.update(users).set(updates).where(eq(users.id, id));

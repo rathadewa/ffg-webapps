@@ -1,7 +1,7 @@
 import { int, mysqlTable, varchar, timestamp, boolean, mysqlEnum } from "drizzle-orm/mysql-core";
 
-export type UserRole = "Superuser" | "Administrator" | "Manager" | "Agent" | "Teknisi";
-export const ROLES: UserRole[] = ["Superuser", "Administrator", "Manager", "Agent", "Teknisi"];
+export type UserRole = "Superuser" | "Administrator" | "Agent" | "Teknisi";
+export const ROLES: UserRole[] = ["Superuser", "Administrator", "Agent", "Teknisi"];
 
 export const users = mysqlTable("users", {
   id:          int("id").primaryKey().autoincrement(),
@@ -9,7 +9,7 @@ export const users = mysqlTable("users", {
   email:       varchar("email",        { length: 255 }).notNull().unique(),
   nik:         int("nik").unique(),
   password:    varchar("password",     { length: 255 }).notNull(),
-  role:        mysqlEnum("role", ["Superuser", "Administrator", "Manager", "Agent", "Teknisi"]).notNull().default("Agent"),
+  role:        mysqlEnum("role", ["Superuser", "Administrator", "Agent", "Teknisi"]).notNull().default("Agent"),
   twoFaSetup:  boolean("two_fa_setup").notNull().default(false),
   twoFaSecret: varchar("two_fa_secret", { length: 64 }),
   createdAt:   timestamp("created_at").defaultNow().notNull(),

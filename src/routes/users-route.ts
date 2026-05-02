@@ -2,7 +2,7 @@ import { Elysia, t } from "elysia";
 import { registerUser, loginUser, getCurrentUser, logoutUser, markTwoFaSetup, getTwoFaSecret, verifyTwoFa, getAllUsers, createUserByAdmin, updateUser, deleteUser, getSessionRole } from "../services/user-service";
 import type { UserRole } from "../db/schema/users";
 
-const ADMIN_ROLES: UserRole[] = ["Superuser", "Administrator", "Manager"];
+const ADMIN_ROLES: UserRole[] = ["Superuser", "Administrator"];
 
 async function requireRole(headers: Record<string, string | undefined>, set: { status?: unknown }): Promise<string | null> {
   const authorization = headers["authorization"] ?? "";
@@ -26,7 +26,7 @@ export const usersRoute = new Elysia()
         const token = getToken(headers);
         if (!token) { set.status = 401; return { error: "unauthorised" }; }
         const role = await getSessionRole(token);
-        if (!role || !ADMIN_ROLES.includes(role)) { set.status = 403; return { error: "Akses ditolak. Hanya Administrator atau Manager yang dapat mendaftarkan pengguna baru." }; }
+        if (!role || !ADMIN_ROLES.includes(role)) { set.status = 403; return { error: "Akses ditolak. Hanya Administrator yang dapat mendaftarkan pengguna baru." }; }
         await registerUser(body);
         set.status = 201;
         return { data: "OK" };
@@ -142,11 +142,15 @@ export const usersRoute = new Elysia()
     }
   }, {
     body: t.Object({
-      name:     t.String(),
-      email:    t.String(),
-      nik:      t.Number(),
-      password: t.String(),
-      role:     t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")]),
+      name:       t.String(),
+      email:      t.String(),
+      nik:        t.Optional(t.Number()),
+      password:   t.String(),
+      role:       t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Agent"), t.Literal("Teknisi")]),
+      distrik:    t.Optional(t.String()),
+      hsa:        t.Optional(t.String()),
+      sto:        t.Optional(t.String()),
+      idTelegram: t.Optional(t.String()),
     }),
   })
   .put("/api/users/:id", async ({ params, body, headers, set }) => {
@@ -165,11 +169,15 @@ export const usersRoute = new Elysia()
     }
   }, {
     body: t.Object({
-      name:     t.Optional(t.String()),
-      email:    t.Optional(t.String()),
-      nik:      t.Optional(t.Number()),
-      password: t.Optional(t.String()),
-      role:     t.Optional(t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Manager"), t.Literal("Agent"), t.Literal("Teknisi")])),
+      name:       t.Optional(t.String()),
+      email:      t.Optional(t.String()),
+      nik:        t.Optional(t.Number()),
+      password:   t.Optional(t.String()),
+      role:       t.Optional(t.Union([t.Literal("Superuser"), t.Literal("Administrator"), t.Literal("Agent"), t.Literal("Teknisi")])),
+      distrik:    t.Optional(t.String()),
+      hsa:        t.Optional(t.String()),
+      sto:        t.Optional(t.String()),
+      idTelegram: t.Optional(t.String()),
     }),
   })
   .delete("/api/users/:id", async ({ params, headers, set }) => {
