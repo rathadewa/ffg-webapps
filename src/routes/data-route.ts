@@ -99,6 +99,8 @@ export const dataRoute = new Elysia()
         sto:               query.sto?.trim()               || undefined,
         sortBy:            query.sortBy                    || undefined,
         sortDir:           (query.sortDir as "asc" | "desc") || "desc",
+        dateFrom:          query.dateFrom?.trim()          || undefined,
+        dateTo:            query.dateTo?.trim()            || undefined,
       }) };
     } catch (error) {
       set.status = 500;
@@ -114,6 +116,8 @@ export const dataRoute = new Elysia()
       sto:              t.Optional(t.String()),
       sortBy:           t.Optional(t.String()),
       sortDir:          t.Optional(t.String()),
+      dateFrom:         t.Optional(t.String()),
+      dateTo:           t.Optional(t.String()),
     }),
   })
 

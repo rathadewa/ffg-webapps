@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Search, ChevronUp, ChevronDown, ChevronsLeft, ChevronsRight,
-  ChevronLeft, ChevronRight, Database, X, ImageOff, Images, Download,
+  ChevronLeft, ChevronRight, Database, X, ImageOff, Images, Download, CalendarDays,
 } from "lucide-react";
 import { BASE_PATH } from "../config";
 
@@ -11,6 +11,7 @@ type SortDir = "asc" | "desc";
 interface HistoryRow {
   order_id:          string;
   type:              string;
+  order_type:        "logic" | "fisik" | null;
   sto:               string | null;
   external:          string | null;
   speedy:            string | null;
@@ -35,6 +36,7 @@ interface PageResult {
 interface Filters {
   page: number; search: string; sortBy: string; sortDir: SortDir;
   status: string; statusPengerjaan: string; sto: string;
+  dateFrom: string; dateTo: string;
 }
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -293,6 +295,8 @@ export default function HistoryView() {
   const [status,           setStatus]           = useState("all");
   const [statusPengerjaan, setStatusPengerjaan] = useState("all");
   const [sto,              setSto]              = useState("");
+  const [dateFrom,         setDateFrom]         = useState("");
+  const [dateTo,           setDateTo]           = useState("");
   const [sortBy,           setSortBy]           = useState("down_time");
   const [sortDir,          setSortDir]          = useState<SortDir>("desc");
   const [page,             setPage]             = useState(1);
@@ -312,6 +316,8 @@ export default function HistoryView() {
       if (f.status !== "all")               params.set("status",           f.status);
       if (f.statusPengerjaan !== "all")     params.set("statusPengerjaan", f.statusPengerjaan);
       if (f.sto)                            params.set("sto",              f.sto);
+      if (f.dateFrom)                       params.set("dateFrom",         f.dateFrom);
+      if (f.dateTo)                         params.set("dateTo",           f.dateTo);
 
       const res  = await fetch(`${BASE_PATH}/api/data/history?${params}`, { headers: authHeader() });
       const json = await res.json() as { data?: PageResult; error?: string };
@@ -322,11 +328,11 @@ export default function HistoryView() {
   }, [limit]);
 
   const currentFilters = useCallback((): Filters => ({
-    page, search, sortBy, sortDir, status, statusPengerjaan, sto,
-  }), [page, search, sortBy, sortDir, status, statusPengerjaan, sto]);
+    page, search, sortBy, sortDir, status, statusPengerjaan, sto, dateFrom, dateTo,
+  }), [page, search, sortBy, sortDir, status, statusPengerjaan, sto, dateFrom, dateTo]);
 
   useEffect(() => {
-    fetchData({ page: 1, search: "", sortBy: "down_time", sortDir: "desc", status: "all", statusPengerjaan: "all", sto: "" });
+    fetchData({ page: 1, search: "", sortBy: "down_time", sortDir: "desc", status: "all", statusPengerjaan: "all", sto: "", dateFrom: "", dateTo: "" });
   }, [fetchData]);
 
   const reload = (overrides: Partial<Filters> = {}) => fetchData({ ...currentFilters(), ...overrides });
@@ -343,6 +349,10 @@ export default function HistoryView() {
     debounce.current = setTimeout(() => reload({ sto: val, page: 1 }), 350);
   };
 
+  const handleDateFrom = (val: string) => { setDateFrom(val); setPage(1); reload({ dateFrom: val, page: 1 }); };
+  const handleDateTo   = (val: string) => { setDateTo(val);   setPage(1); reload({ dateTo:   val, page: 1 }); };
+  const clearDates     = ()            => { setDateFrom(""); setDateTo(""); setPage(1); reload({ dateFrom: "", dateTo: "", page: 1 }); };
+
   const handleStatus = (val: string) => { setStatus(val); setPage(1); reload({ status: val, page: 1 }); };
   const handleSp     = (val: string) => { setStatusPengerjaan(val); setPage(1); reload({ statusPengerjaan: val, page: 1 }); };
 
@@ -354,11 +364,11 @@ export default function HistoryView() {
 
   const goPage = (p: number) => { setPage(p); reload({ page: p }); };
 
-  const hasActiveFilter = search || status !== "all" || statusPengerjaan !== "all" || sto;
+  const hasActiveFilter = search || status !== "all" || statusPengerjaan !== "all" || sto || dateFrom || dateTo;
 
   const resetFilters = () => {
-    setSearch(""); setStatus("all"); setStatusPengerjaan("all"); setSto(""); setPage(1);
-    reload({ search: "", status: "all", statusPengerjaan: "all", sto: "", page: 1 });
+    setSearch(""); setStatus("all"); setStatusPengerjaan("all"); setSto(""); setDateFrom(""); setDateTo(""); setPage(1);
+    reload({ search: "", status: "all", statusPengerjaan: "all", sto: "", dateFrom: "", dateTo: "", page: 1 });
   };
 
   const openEvidence = (raw: string | null) => {
@@ -371,13 +381,13 @@ export default function HistoryView() {
     borderRadius: 8, color: "var(--fg)", fontSize: 12, padding: "7px 10px", outline: "none",
   };
 
-  const filterBtn = (val: string, cur: string, label: string, color?: string) => {
+  const filterBtn = (val: string, cur: string, label: string, onSelect: (v: string) => void, color?: string) => {
     const active = cur === val;
     return (
-      <button key={val} onClick={() => val === cur ? undefined : (color ? handleStatus(val) : handleSp(val))}
+      <button key={val} onClick={() => { if (val !== cur) onSelect(val); }}
         style={{
           padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
-          border: `1px solid ${active && color ? "transparent" : active ? "transparent" : "var(--border)"}`,
+          border: `1px solid ${active ? "transparent" : "var(--border)"}`,
           background: active ? (color ? `${color}22` : "var(--accent-subtle)") : "var(--bg-input)",
           color: active ? (color ?? "var(--accent)") : "var(--fg-dim)", transition: "all .15s",
         }}>
@@ -424,11 +434,73 @@ export default function HistoryView() {
                 value={sto} onChange={(e) => handleSto(e.target.value)} />
             </div>
 
+            {/* Date range — filter by down_time */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 0,
+              background: "var(--bg-raised)",
+              border: `1px solid ${(dateFrom || dateTo) ? "rgba(99,102,241,0.5)" : "var(--border)"}`,
+              borderRadius: 999, overflow: "hidden",
+              boxShadow: (dateFrom || dateTo) ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+              padding: "4px 4px 4px 10px",
+            }}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 5,
+                color: (dateFrom || dateTo) ? "#818cf8" : "var(--fg-dim)",
+                fontSize: 11, fontWeight: 600,
+                paddingRight: 8, borderRight: "1px solid var(--border)",
+                marginRight: 4, flexShrink: 0,
+              }}>
+                <CalendarDays size={12} />
+                Down Time
+              </div>
+              <input
+                type="date" value={dateFrom}
+                onChange={(e) => handleDateFrom(e.target.value)}
+                onKeyDown={(e) => e.preventDefault()}
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                style={{
+                  background: "transparent", border: "none",
+                  color: dateFrom ? "var(--fg)" : "var(--fg-faint)",
+                  fontSize: 12, padding: "3px 6px",
+                  outline: "none", cursor: "pointer", width: 118,
+                }}
+              />
+              <span style={{ fontSize: 12, color: "var(--fg-faint)", padding: "0 2px", userSelect: "none" }}>→</span>
+              <input
+                type="date" value={dateTo}
+                onChange={(e) => handleDateTo(e.target.value)}
+                onKeyDown={(e) => e.preventDefault()}
+                onClick={(e) => (e.currentTarget as HTMLInputElement).showPicker?.()}
+                style={{
+                  background: "transparent", border: "none",
+                  color: dateTo ? "var(--fg)" : "var(--fg-faint)",
+                  fontSize: 12, padding: "3px 6px",
+                  outline: "none", cursor: "pointer", width: 118,
+                }}
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={clearDates}
+                  title="Hapus filter tanggal"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: "var(--bg-card)", border: "1px solid var(--border-strong)",
+                    borderRadius: 999, color: "#f87171", cursor: "pointer",
+                    padding: "3px 7px", marginLeft: 4,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  <X size={11} />
+                </button>
+              )}
+            </div>
+
             {/* Status */}
             <div style={{ display: "flex", gap: 4 }}>
               {(["all", "UP", "DOWN", "NOT FOUND"] as const).map((s) => {
                 const clr = s === "UP" ? "#34d399" : s === "DOWN" ? "#f87171" : s === "NOT FOUND" ? "#fbbf24" : undefined;
-                return filterBtn(s, status, s === "all" ? "Semua Status" : s, clr);
+                return filterBtn(s, status, s === "all" ? "Semua Status" : s, handleStatus, clr);
               })}
             </div>
 
@@ -487,6 +559,7 @@ export default function HistoryView() {
                 <tr>
                   <SortTh col="order_id"          label="Order ID"         {...sortProps} />
                   <th>Tipe</th>
+                  <th>Jenis</th>
                   <SortTh col="sto"               label="STO"              {...sortProps} />
                   <th>External</th>
                   <th>Speedy</th>
@@ -512,6 +585,17 @@ export default function HistoryView() {
                         <span className={`badge ${row.type === "IndiHome" ? "badge-type-home" : "badge-type-biz"}`}>
                           {row.type}
                         </span>
+                      </td>
+                      <td>
+                        {row.order_type ? (
+                          <span style={{
+                            padding: "2px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700,
+                            background: row.order_type === "logic" ? "rgba(139,92,246,0.15)" : "rgba(20,184,166,0.15)",
+                            color:      row.order_type === "logic" ? "#8b5cf6"               : "#14b8a6",
+                          }}>
+                            {row.order_type === "logic" ? "Logic" : "Fisik"}
+                          </span>
+                        ) : EMPTY}
                       </td>
                       <td>{row.sto      ?? EMPTY}</td>
                       <td>{row.external ?? EMPTY}</td>
