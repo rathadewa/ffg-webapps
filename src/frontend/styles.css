@@ -309,7 +309,6 @@ img { display: block; max-width: 100%; }
 
 /* Shared light-mode gradient for all card-like surfaces */
 [data-theme="light"] .auth-card,
-[data-theme="light"] .modal,
 [data-theme="light"] .panel,
 [data-theme="light"] .lb-card,
 [data-theme="light"] .lb-table-wrap {
@@ -321,11 +320,16 @@ img { display: block; max-width: 100%; }
   border-color: rgba(197, 213, 236, 0.7);
   box-shadow: 0 4px 24px rgba(10,30,80,0.07), inset 0 1px 0 rgba(255,255,255,0.95);
 }
+[data-theme="light"] .modal {
+  background: linear-gradient(145deg, #ffffff 0%, #f3f0ff 50%, #ebeeff 100%);
+  border-color: rgba(197, 213, 236, 0.7);
+}
 [data-theme="light"] .auth-card {
   box-shadow: 0 8px 40px rgba(10,30,80,0.1), inset 0 1px 0 rgba(255,255,255,0.95);
 }
 [data-theme="light"] .modal {
-  box-shadow: 0 8px 40px rgba(10,30,80,0.12), inset 0 1px 0 rgba(255,255,255,0.95);
+  box-shadow: 0 8px 40px rgba(10,30,80,0.1), inset 0 1px 0 rgba(255,255,255,0.95);
+  border-radius: var(--r-xl);
 }
 
 [data-theme="light"] .login-ray {
@@ -1233,14 +1237,14 @@ select.field-input {
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  background: rgba(9, 20, 34, 0.7);
+  background: rgba(9, 20, 34, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(28, 48, 80, 0.55);
-  border-radius: var(--r-xl);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
   width: 100%;
-  max-width: 460px;
+  max-width: 560px;
   animation: slide-up 0.22s cubic-bezier(0.4,0,0.2,1);
 }
 @keyframes slide-up {

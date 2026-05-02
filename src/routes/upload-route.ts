@@ -3,7 +3,7 @@ import { getSessionRole } from "../services/user-service";
 import { importIndihome, importIndibiz } from "../services/upload-service";
 import type { UserRole } from "../db/schema/users";
 
-const ALLOWED: UserRole[] = ["Administrator", "Manager"];
+const ALLOWED: UserRole[] = ["Administrator"];
 
 async function resolveToken(headers: Record<string, string | undefined>): Promise<string> {
   return (headers["authorization"] ?? "").split(" ")[1] ?? "";

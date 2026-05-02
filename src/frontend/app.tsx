@@ -11,7 +11,7 @@ import Setup2FAPage from "./pages/Setup2FAPage";
 import DashboardPage from "./pages/DashboardPage";
 
 const SESSION_DURATION = 60 * 60 * 1000; // 1 jam
-const ADMIN_ROLES = ["Superuser", "Administrator", "Manager"];
+const ADMIN_ROLES = ["Superuser", "Administrator"];
 
 export function isSessionValid(): boolean {
   if (localStorage.getItem("is_logged_in") !== "true") return false;
